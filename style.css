@@ -501,12 +501,12 @@ body::before {
 .character-card strong {
   margin-bottom: 6px;
   color: #eadcb9;
-  font-size: 14px;
+  font-size: 18px;
 }
 
 .character-card span {
   color: #b8a98f;
-  font-size: 11px;
+  font-size: 15px;
   line-height: 1.45;
 }
 
@@ -556,6 +556,66 @@ button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   filter: grayscale(0.7);
+}
+
+.mobile-controls {
+  position: absolute;
+  inset: 0;
+  z-index: 24;
+  display: none;
+  pointer-events: none;
+  touch-action: none;
+}
+
+#game.mobile-playing .mobile-controls { display: block; }
+
+.move-joystick {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  background: rgba(7, 7, 9, 0.68);
+  border: 4px solid rgba(240, 212, 138, 0.78);
+  box-shadow: inset 0 0 22px #000, 0 5px 14px #0009;
+}
+
+.joystick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #7b1d25;
+  border: 4px solid #eadcb9;
+  box-shadow: 0 4px 10px #000b;
+  pointer-events: none;
+}
+
+.mobile-action {
+  position: absolute;
+  right: 28px;
+  bottom: 36px;
+  width: 132px;
+  min-width: 0;
+  height: 72px;
+  padding: 6px;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: manipulation;
+  color: #fff4c4;
+  background: rgba(123, 29, 37, 0.9);
+  font-size: 18px;
+  box-shadow: inset 0 0 0 3px #eadcb9, 0 6px 14px #000b;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 981px) {
+  .mobile-controls { display: none !important; }
 }
 
 #pauseMenu.show,
@@ -669,11 +729,11 @@ button:disabled {
   }
 
   .character-card strong {
-    font-size: 13px;
+    font-size: 18px;
   }
 
   .character-card span {
-    font-size: 10px;
+    font-size: 15px;
   }
 }
 

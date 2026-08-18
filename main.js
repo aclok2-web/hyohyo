@@ -108,6 +108,7 @@
 
       this.assets = this.loadAssets();
       this.bindEvents();
+      this.bindMobileControls();
       this.bindMiniGameEvents();
       this.loadGame();
       this.syncMiniGameCompletion();
@@ -171,6 +172,51 @@
         if (event.key === "nagging_quiz_complete" && event.newValue) this.completeNaggingQuiz();
         if (event.key === "mom_find_complete" && event.newValue) this.completeNaggingQuiz();
         if (event.key === "father_game_complete" && event.newValue) this.completeFatherGame();
+      });
+    }
+
+    bindMobileControls() {
+      const joystick = document.getElementById("moveJoystick");
+      const knob = document.getElementById("joystickKnob");
+      const action = document.getElementById("mobileActionBtn");
+      if (!joystick || !knob || !action) return;
+
+      let activePointer = null;
+      const reset = () => {
+        this.input.up = this.input.down = this.input.left = this.input.right = false;
+        knob.style.transform = "translate(-50%, -50%)";
+        activePointer = null;
+      };
+      const move = (event) => {
+        if (activePointer !== event.pointerId) return;
+        event.preventDefault();
+        const rect = joystick.getBoundingClientRect();
+        const radius = rect.width * 0.31;
+        let dx = event.clientX - (rect.left + rect.width / 2);
+        let dy = event.clientY - (rect.top + rect.height / 2);
+        const distance = Math.hypot(dx, dy) || 1;
+        if (distance > radius) { dx = dx / distance * radius; dy = dy / distance * radius; }
+        knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+        const threshold = radius * 0.24;
+        this.input.left = dx < -threshold;
+        this.input.right = dx > threshold;
+        this.input.up = dy < -threshold;
+        this.input.down = dy > threshold;
+      };
+      joystick.addEventListener("pointerdown", (event) => {
+        activePointer = event.pointerId;
+        joystick.setPointerCapture(event.pointerId);
+        move(event);
+      });
+      joystick.addEventListener("pointermove", move);
+      joystick.addEventListener("pointerup", reset);
+      joystick.addEventListener("pointercancel", reset);
+      window.addEventListener("blur", reset);
+
+      action.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        if (this.dialog.active) this.dialog.advance();
+        else if (this.started && !this.paused) this.interact();
       });
     }
 
@@ -244,6 +290,7 @@
       }
       this.applyCharacter(this.playerCharacter);
       this.started = true;
+      document.getElementById("game").classList.add("mobile-playing");
       this.dom.title.style.display = "none";
       this.showMission("미션을 해결하며 10개의 비밀번호 글자를 하나씩 찾아보세요.");
       if (this.pendingFatherApology) {
@@ -720,6 +767,7 @@
       this.selectedCharacterIndex = 0;
       this.hasSaveData = false;
       this.started = false;
+      document.getElementById("game").classList.remove("mobile-playing");
       this.paused = false;
       this.lastAutoSave = 0;
       this.epilogueMode = false;

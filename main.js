@@ -1434,8 +1434,15 @@
     const viewport = window.visualViewport;
     const width = viewport ? viewport.width : window.innerWidth;
     const height = viewport ? viewport.height : window.innerHeight;
-    const scale = Math.min(1, width / 960, height / 540);
-    game.style.transform = `scale(${Math.max(0.1, scale)})`;
+    game.style.position = "fixed";
+    game.style.left = "50%";
+    game.style.top = "50%";
+    game.style.transformOrigin = "center center";
+    game.style.transform = "translate(-50%, -50%)";
+    const baseWidth = game.offsetWidth || 972;
+    const baseHeight = game.offsetHeight || 552;
+    const scale = Math.min(1, width / baseWidth, height / baseHeight);
+    game.style.transform = `translate(-50%, -50%) scale(${Math.max(0.1, scale)})`;
   }
   window.addEventListener("resize", fitGameToViewport, { passive: true });
   window.addEventListener("orientationchange", fitGameToViewport, { passive: true });

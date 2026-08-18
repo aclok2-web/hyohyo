@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>효 퀴즈 게임</title>
+
+<style>
+body{
+    font-family:"맑은 고딕",sans-serif;
+    background:#e8f5e9;
+    text-align:center;
+    padding:40px;
+}
+
+#game{
+    max-width:650px;
+    margin:auto;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 0 10px gray;
+}
+
+button{
+    width:100%;
+    padding:15px;
+    margin:10px 0;
+    font-size:18px;
+    background:#4CAF50;
+    color:white;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#388E3C;
+}
+
+input{
+    width:90%;
+    padding:12px;
+    font-size:18px;
+    margin:15px 0;
+}
+
+#message{
+    margin-top:20px;
+    font-size:20px;
+    font-weight:bold;
+}
+</style>
+
+</head>
+<body>
+
+<div id="game">
+    <h2 id="question"></h2>
+    <div id="choices"></div>
+    <p id="message"></p>
+</div>
+
+<script>
+
+const questions=[
+
+{
+question:"1. 효에 관련된 속담은?",
+choices:[
+"ㄱ. 누워서 떡먹기",
+"ㄴ. 방귀 뀐 놈이 성낸다",
+"ㄷ. 긴병에 효자 없다",
+"ㄹ. 가는 말이 고와야 오는 말이 곱다"
+],
+answer:2
+},
+
+{
+question:"2. 빈칸에 들어갈 말을 고르시오.\n\n(보기) ________는 부모가 만든다.",
+choices:[
+"ㄱ. 예의",
+"ㄴ. 효자",
+"ㄷ. 행동",
+"ㄹ. 미래"
+],
+answer:1
+},
+
+{
+question:"3. 보기의 말을 순서대로 나열하시오.\n\n부모가 ________ 된다.\n\n보기\nㄱ. 되어야\nㄴ. 온 효자가\nㄷ. 반 효자\nㄹ. 자식이",
+type:"text",
+answer:"ㄴㄱㄹㄷ"
+}
+
+];
+
+let current=0;
+
+function loadQuestion(){
+
+document.getElementById("message").innerHTML="";
+
+let q=questions[current];
+
+document.getElementById("question").innerText=q.question;
+
+let choices=document.getElementById("choices");
+
+choices.innerHTML="";
+
+if(q.type==="text"){
+
+choices.innerHTML=`
+<input id="answerInput" type="text" placeholder="정답을 입력하세요">
+<button onclick="checkTextAnswer()">제출</button>
+`;
+
+}else{
+
+q.choices.forEach((choice,index)=>{
+
+let btn=document.createElement("button");
+
+btn.innerText=choice;
+
+btn.onclick=function(){
+checkAnswer(index);
+};
+
+choices.appendChild(btn);
+
+});
+
+}
+
+}
+
+function checkAnswer(index){
+
+if(index===questions[current].answer){
+
+document.getElementById("message").style.color="green";
+document.getElementById("message").innerHTML="⭕ 정답입니다!";
+
+setTimeout(function(){
+
+current++;
+
+if(current<questions.length){
+
+loadQuestion();
+
+}else{
+
+finishGame();
+
+}
+
+},1000);
+
+}else{
+
+document.getElementById("message").style.color="red";
+document.getElementById("message").innerHTML="❌ 틀렸습니다. 다시 선택하세요.";
+
+}
+
+}
+
+function checkTextAnswer(){
+
+let input=document.getElementById("answerInput").value;
+
+input=input.replace(/\s+/g,"");
+
+if(input===questions[current].answer){
+
+document.getElementById("message").style.color="green";
+document.getElementById("message").innerHTML="⭕ 정답입니다!";
+
+setTimeout(function(){
+
+finishGame();
+
+},1000);
+
+}else{
+
+document.getElementById("message").style.color="red";
+document.getElementById("message").innerHTML="❌ 틀렸습니다. 다시 입력하세요.";
+
+}
+
+}
+
+function finishGame(){
+
+document.getElementById("game").innerHTML=`
+<h1>🎉 축하합니다! 🎉</h1>
+<h2>모든 문제를 맞혔습니다!</h2>
+<h1 style="font-size:80px;color:blue;">H</h1>
+<button onclick="location.reload()">다시 하기</button>
+`;
+
+}
+
+loadQuestion();
+
+</script>
+
+</body>
+</html>

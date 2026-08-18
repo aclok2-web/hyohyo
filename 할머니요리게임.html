@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>할머니의 손맛 - 전설의 참마도</title>
+<style>
+:root{
+  --bg:#17120e;--paper:#fff5df;--ink:#2e2119;--wood:#845936;
+  --accent:#c54f32;--gold:#ffc857;--good:#66c27c;--bad:#ff6961;
+}
+*{box-sizing:border-box;touch-action:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Malgun Gothic","Noto Sans KR",sans-serif;background:#100d0b;color:#fff}
+#game{position:relative;width:100%;height:100%;overflow:hidden;background-image:linear-gradient(#00000018,#00000028),url("grandma_cooking_background.png");background-size:cover;background-position:center;background-repeat:no-repeat}
+.kitchen{display:none}
+.shelf{position:absolute;left:0;right:0;top:25%;height:13%;background:#6f482f;border-top:7px solid #3e281c;border-bottom:7px solid #3e281c}
+.shelf:before{content:"🥣  🫙  🍶  🧂  🥫  🍵  🫙";position:absolute;left:50%;top:-1px;transform:translateX(-50%);font-size:44px;letter-spacing:18px;white-space:nowrap}
+.counter{position:absolute;left:0;right:0;bottom:0;height:23%;background:linear-gradient(#96633d,#6e452c);border-top:8px solid #c39463}
+.window{position:absolute;right:6%;top:6%;width:210px;height:150px;border:12px solid #5a3825;background:linear-gradient(#8fc2df,#f1d09d);box-shadow:inset 0 0 0 3px #d8b68b}
+.window:before,.window:after{content:"";position:absolute;background:#5a3825}.window:before{left:50%;top:0;bottom:0;width:8px}.window:after{top:50%;left:0;right:0;height:8px}
+.grandma{position:absolute;left:2%;bottom:16%;width:min(310px,30vw);height:52%;z-index:10;filter:drop-shadow(0 6px 2px #0006);mix-blend-mode:multiply;object-fit:contain}
+.speech{position:absolute;left:50%;top:7%;transform:translateX(-50%);z-index:20;background:#fff7e8;color:var(--ink);border:4px solid #6b4932;border-radius:20px;padding:12px 18px;font-size:clamp(16px,2.6vw,22px);font-weight:1000;box-shadow:0 7px 0 #3a2418;max-width:70%;text-align:center}
+.hud{position:absolute;left:12px;right:12px;top:10px;z-index:30;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.group{display:flex;gap:8px;flex-wrap:wrap}.pill{background:#0009;border:1px solid #ffffff2b;border-radius:999px;padding:8px 12px;font-weight:900;backdrop-filter:blur(4px)}
+.meterWrap{position:absolute;left:50%;top:66px;transform:translateX(-50%);width:min(520px,82vw);z-index:31}
+.label{text-align:center;font-weight:1000;margin-bottom:5px;text-shadow:0 2px 2px #000}.meter{height:18px;border:3px solid #fff6;border-radius:999px;overflow:hidden;background:#1c1815}.fill{height:100%;width:0;background:linear-gradient(90deg,#73d27e,#f5cf55,#e94f37);transition:.15s}
+#canvas{position:absolute;inset:0;z-index:15;mix-blend-mode:screen}
+#slashTrail{position:absolute;inset:0;z-index:40;pointer-events:none}
+.combo{position:absolute;left:50%;top:23%;transform:translate(-50%,-50%);z-index:35;font-size:clamp(32px,8vw,72px);font-weight:1000;color:#ffe15b;text-shadow:0 5px 0 #7f341c,0 0 20px #ff7827;opacity:0;pointer-events:none}
+.combo.show{animation:combo .45s}@keyframes combo{0%{opacity:0;scale:.5}35%{opacity:1;scale:1.18}100%{opacity:0;scale:1}}
+.judge{position:absolute;left:50%;top:37%;transform:translateX(-50%);z-index:35;font-size:26px;font-weight:1000;min-height:40px;text-shadow:0 2px 3px #000}
+.awaken{position:absolute;inset:0;z-index:45;pointer-events:none;opacity:0;background:
+radial-gradient(circle at center,#ff4f1f33 0 28%,transparent 65%),
+repeating-linear-gradient(0deg,transparent 0 4px,#ff2b2b08 4px 5px)}
+.awaken.on{animation:awaken .9s}@keyframes awaken{0%{opacity:0}25%{opacity:.9}100%{opacity:0}}
+.banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-3deg);z-index:50;font-size:clamp(34px,8vw,78px);font-weight:1000;color:#fff0ca;text-shadow:0 5px 0 #7a150c,0 0 30px #ff3828;opacity:0;pointer-events:none;white-space:nowrap}
+.banner.show{animation:banner 1.2s}@keyframes banner{0%{opacity:0;scale:.5}25%{opacity:1;scale:1.15}75%{opacity:1}100%{opacity:0;scale:1}}
+.specialReveal{position:absolute;inset:0;z-index:70;display:grid;place-items:center;background:#000;opacity:0;pointer-events:none;transition:opacity .18s}.specialReveal.show{opacity:1}.specialReveal img{width:100%;height:100%;object-fit:cover}
+.specialBtn{position:absolute;right:18px;bottom:24%;z-index:36;width:120px;height:120px;border-radius:50%;border:5px solid #ffe6a0;background:radial-gradient(#f06b2e,#7c160c);color:white;font-weight:1000;font-size:19px;box-shadow:0 0 25px #ff6b2d,0 8px 0 #4b160f;cursor:pointer;opacity:.35;pointer-events:none}
+.specialBtn.ready{opacity:1;pointer-events:auto;animation:pulse 1s infinite}@keyframes pulse{50%{transform:scale(1.07);box-shadow:0 0 42px #ff943e,0 8px 0 #4b160f}}
+.overlay{position:fixed;inset:0;z-index:80;background:#080604e8;display:grid;place-items:center;padding:20px}
+.card{width:min(560px,94vw);background:#fff5df;color:#2f2118;border:5px solid #6e482f;border-radius:28px;padding:28px;text-align:center;box-shadow:0 20px 70px #000b}
+.card h1,.card h2{margin:0 0 12px}.card p{font-size:18px;line-height:1.65}.btn{border:0;border-radius:15px;padding:14px 24px;font-size:20px;font-weight:1000;background:#c75b39;color:white;cursor:pointer}.hidden{display:none}
+.small{font-size:13px;color:#755e50}
+@media(max-width:650px){.grandma{font-size:80px}.speech{max-width:88%;top:12%;font-size:14px}.specialBtn{width:92px;height:92px;font-size:15px;right:10px;bottom:22%}.pill{font-size:12px;padding:6px 9px}.shelf:before{font-size:30px;letter-spacing:9px}.window{width:140px;height:105px}}
+@media (orientation:landscape) and (max-height:600px){.hud{top:4px}.pill{padding:4px 7px;font-size:11px}.meterWrap{top:38px}.speech{top:10%;padding:6px 10px;font-size:12px}.grandma{height:44%;bottom:12%}.specialBtn{width:72px;height:72px;right:8px;bottom:18%;font-size:12px}.card{max-height:94dvh;overflow:hidden;padding:14px}.card p{font-size:14px;line-height:1.35}.btn{padding:9px 16px;font-size:16px}}
+</style>
+</head>
+<body>
+<div id="game">
+ <div class="kitchen"><div class="window"></div><div class="shelf"></div><div class="counter"></div></div>
+ <div class="hud">
+   <div class="group"><div class="pill">점수 <span id="score">0</span></div><div class="pill">콤보 <span id="comboHud">0</span></div></div>
+   <div class="group"><div class="pill">실수 <span id="miss">0</span>/5</div><div class="pill">시간 <span id="time">60</span></div></div>
+ </div>
+ <div class="meterWrap"><div class="label">🔥 할머니의 손맛 게이지</div><div class="meter"><div class="fill" id="fill"></div></div></div>
+ <img class="grandma" src="grandma_cook.png" alt="프라이팬과 칼을 든 할머니">
+ <div class="speech" id="speech">“오늘 저녁 준비 좀 도와줄래?”</div>
+ <canvas id="canvas"></canvas><canvas id="slashTrail"></canvas>
+ <div class="combo" id="comboPop"></div><div class="judge" id="judge"></div>
+ <div class="awaken" id="awaken"></div><div class="banner" id="banner">전설의 참마도!</div>
+ <div class="specialReveal" id="specialReveal"><img src="grandma_special.png" alt="손맛 해방 할머니 연출"></div>
+ <button class="specialBtn" id="special">🔥 손맛<br>해방</button>
+</div>
+
+<div class="overlay" id="intro">
+ <div class="card">
+   <h1>👵 할머니의 손맛</h1>
+   <p>부엌에서 재료 손질을 도와주세요.<br><br>
+   날아오는 <b>요리 재료는 손가락으로 슥 베고</b>,<br>
+   양말·휴대폰·안경 같은 물건은 피하세요.<br><br>
+   손맛 게이지가 가득 차면<br><b>전설의 참마도 모드</b>가 열립니다! 🔥</p>
+   <button class="btn" id="start">요리 시작!</button>
+   <p class="small">모바일: 손가락 스와이프 · PC: 마우스 드래그</p>
+ </div>
+</div>
+
+<div class="overlay hidden" id="end">
+ <div class="card">
+   <h2 id="endTitle">🍲 요리 완성!</h2>
+   <p id="result"></p>
+   <button class="btn" id="again">다시 요리하기</button>
+ </div>
+</div>
+
+<script>
+const canvas=document.querySelector("#canvas"),ctx=canvas.getContext("2d");
+const trail=document.querySelector("#slashTrail"),tctx=trail.getContext("2d");
+let W,H,objects=[],running=false,last=0,spawnT=0,score=0,combo=0,maxCombo=0,miss=0,time=60,gauge=0,special=false,specialEnd=0,raf,timerInt;
+let pointerDown=false,lastPoint=null,trailPoints=[];
+const propsSheet=new Image();propsSheet.src="grandma_props.png";
+
+const foods=[
+ {e:"🥕",name:"당근"},{e:"🥔",name:"감자"},{e:"🧅",name:"양파"},{e:"🧄",name:"마늘"},
+ {e:"🍄",name:"버섯"},{e:"🥬",name:"채소"},{e:"🌶️",name:"고추"},{e:"🍆",name:"가지"}
+];
+const bads=[
+ {e:"🧦",name:"양말",line:"“아이고, 그건 재료가 아니야!”"},
+ {e:"📱",name:"휴대폰",line:"“내 전화기!!!”"},
+ {e:"👓",name:"안경",line:"“내 안경 어디 갔나 했더니!”"},
+ {e:"🧶",name:"털실",line:"“그걸 썰면 목도리는 어쩌니?”"},
+ {e:"🧼",name:"비누",line:"“그건 씻는 거다!”"}
+];
+
+const foodSprites=[
+ {whole:[32,76,135,165],cut:[175,76,120,165]},{whole:[320,78,125,165],cut:[455,78,125,165]},
+ {whole:[610,78,125,165],cut:[745,78,125,165]},{whole:[900,76,135,170],cut:[1040,76,130,170]},
+ {whole:[1200,74,125,175],cut:[1335,74,135,175]},{whole:[22,274,135,165],cut:[165,274,130,165]},
+ {whole:[320,274,125,165],cut:[455,274,125,165]},{whole:[610,274,125,165],cut:[745,274,125,165]},
+ {whole:[900,274,135,165],cut:[1040,274,130,165]},{whole:[1200,274,125,165],cut:[1335,274,135,165]}
+];
+const badSprites=[[30,535,125,185],[165,535,125,185],[295,535,125,185],[430,535,125,185]];
+bads.splice(3,1);
+foods.forEach((item,index)=>{const sprite=foodSprites[index%foodSprites.length];item.sprite=sprite.whole;item.cutSprite=sprite.cut});
+bads.forEach((item,index)=>item.sprite=badSprites[index%badSprites.length]);
+
+function resize(){
+ const r=document.querySelector("#game").getBoundingClientRect();
+ W=canvas.width=trail.width=r.width;H=canvas.height=trail.height=r.height;
+}
+window.addEventListener("resize",resize);resize();
+
+function rand(a,b){return a+Math.random()*(b-a)}
+function spawnObject(forceFood=false){
+ const isBad=!forceFood && Math.random()<(special?0.02:0.18);
+ const data=isBad?bads[Math.floor(Math.random()*bads.length)]:foods[Math.floor(Math.random()*foods.length)];
+ const x=rand(W*.18,W*.88),y=H+50;
+ const vx=rand(-90,90),vy=rand(special?-930:-850,special?-780:-680);
+ objects.push({x,y,vx,vy,r:special?33:31,data,bad:isBad,cut:false,rot:0,vr:rand(-3,3)});
+}
+function drawObj(o){
+ ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);
+ if(propsSheet.complete&&propsSheet.naturalWidth&&o.data.sprite){
+   const sprite=o.cut&&o.data.cutSprite?o.data.cutSprite:o.data.sprite;
+   const [sx,sy,sw,sh]=sprite,size=o.r*2.35;
+   ctx.globalCompositeOperation="screen";
+   ctx.drawImage(propsSheet,sx,sy,sw,sh,-size/2,-size/2,size,size);
+ }else{
+   ctx.font=`${o.r*1.8}px serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(o.data.e,0,0);
+ }
+ ctx.restore();
+}
+function loop(t){
+ if(!running)return;
+ if(!last)last=t;let dt=Math.min(.03,(t-last)/1000);last=t;
+ ctx.clearRect(0,0,W,H);
+ if(special && t>specialEnd){special=false;document.querySelector("#special").classList.remove("ready");document.querySelector("#speech").textContent="“후우… 역시 손맛은 정성이여.”";}
+ spawnT+=dt;
+ const interval=special?.09:Math.max(.28,.55-(60-time)*.003);
+ if(spawnT>interval){spawnT=0;spawnObject(special)}
+ for(let i=objects.length-1;i>=0;i--){
+   const o=objects[i];o.vy+=(o.cut?760:590)*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;o.rot+=o.vr*dt;drawObj(o);
+   if((o.cut&&t>o.cutUntil)||o.y>H+90){objects.splice(i,1)}
+ }
+ drawTrail();
+ raf=requestAnimationFrame(loop);
+}
+function lineCircle(x1,y1,x2,y2,cx,cy,r){
+ const dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy;
+ let t=l2?((cx-x1)*dx+(cy-y1)*dy)/l2:0;t=Math.max(0,Math.min(1,t));
+ const px=x1+t*dx,py=y1+t*dy;return (px-cx)**2+(py-cy)**2<=r*r;
+}
+function slash(a,b){
+ for(let i=objects.length-1;i>=0;i--){
+   const o=objects[i];if(o.cut)continue;
+   if(lineCircle(a.x,a.y,b.x,b.y,o.x,o.y,o.r)){
+     o.cut=true;
+     if(o.bad){
+       objects.splice(i,1);
+       miss++;combo=0;document.querySelector("#miss").textContent=miss;document.querySelector("#comboHud").textContent=0;
+       document.querySelector("#judge").textContent="앗! 잘못 썰었어요!";document.querySelector("#judge").style.color="#ff7777";
+       document.querySelector("#speech").textContent=o.data.line;
+       if(navigator.vibrate)navigator.vibrate([120,60,120]);
+       if(miss>=5)finish(false);
+     }else{
+       o.cutUntil=performance.now()+550;o.vy=-90;o.vx*=1.7;o.vr*=2.2;
+       combo++;maxCombo=Math.max(maxCombo,combo);
+       const add=special?180:100+Math.min(combo*5,75);score+=add;gauge=Math.min(100,gauge+(special?1:8));
+       document.querySelector("#score").textContent=score;document.querySelector("#comboHud").textContent=combo;
+       document.querySelector("#fill").style.width=gauge+"%";
+       document.querySelector("#judge").textContent=special?"참마도 베기!":"슥!";
+       document.querySelector("#judge").style.color="#ffe15b";
+       if(combo>=3){let p=document.querySelector("#comboPop");p.textContent=combo+" COMBO!";p.classList.remove("show");void p.offsetWidth;p.classList.add("show")}
+       if(gauge>=100&&!special){document.querySelector("#special").classList.add("ready");document.querySelector("#speech").textContent="“때가 됐구나… 그걸 꺼내거라.”";}
+     }
+     setTimeout(()=>document.querySelector("#judge").textContent="",320);
+   }
+ }
+}
+function pt(e){
+ const r=canvas.getBoundingClientRect(),p=e.touches?e.touches[0]:e;return{x:p.clientX-r.left,y:p.clientY-r.top}
+}
+function down(e){if(!running)return;pointerDown=true;lastPoint=pt(e);trailPoints.push({...lastPoint,t:performance.now()});e.preventDefault()}
+function move(e){if(!pointerDown||!running)return;const p=pt(e);slash(lastPoint,p);trailPoints.push({...p,t:performance.now()});lastPoint=p;e.preventDefault()}
+function up(){pointerDown=false;lastPoint=null}
+canvas.addEventListener("pointerdown",down);canvas.addEventListener("pointermove",move);window.addEventListener("pointerup",up);
+canvas.addEventListener("touchstart",down,{passive:false});canvas.addEventListener("touchmove",move,{passive:false});window.addEventListener("touchend",up);
+
+function drawTrail(){
+ const now=performance.now();trailPoints=trailPoints.filter(p=>now-p.t<180);
+ tctx.clearRect(0,0,W,H);if(trailPoints.length<2)return;
+ tctx.lineCap="round";tctx.lineJoin="round";tctx.strokeStyle=special?"#ffdf75":"#e8f7ff";tctx.shadowBlur=special?22:12;tctx.shadowColor=special?"#ff4b1f":"#8bdcff";tctx.lineWidth=special?8:5;
+ tctx.beginPath();tctx.moveTo(trailPoints[0].x,trailPoints[0].y);for(const p of trailPoints)tctx.lineTo(p.x,p.y);tctx.stroke();
+}
+function activateSpecial(){
+ if(gauge<100||special||!running)return;
+ gauge=0;document.querySelector("#fill").style.width="0%";document.querySelector("#special").classList.remove("ready");
+ special=true;specialEnd=performance.now()+5000;
+ const reveal=document.querySelector("#specialReveal");reveal.classList.add("show");setTimeout(()=>reveal.classList.remove("show"),1400);
+ document.querySelector("#awaken").classList.remove("on");void document.querySelector("#awaken").offsetWidth;document.querySelector("#awaken").classList.add("on");
+ const b=document.querySelector("#banner");b.classList.remove("show");void b.offsetWidth;b.classList.add("show");
+ document.querySelector("#speech").textContent="“손맛이란 이런 것이여!”";
+ for(let i=0;i<12;i++)setTimeout(()=>spawnObject(true),i*80);
+ if(navigator.vibrate)navigator.vibrate([100,50,100,50,250]);
+}
+document.querySelector("#special").onclick=activateSpecial;
+
+function startGame(){
+ objects=[];score=combo=maxCombo=miss=gauge=0;time=60;special=false;running=true;last=spawnT=0;
+ document.querySelector("#score").textContent=0;document.querySelector("#comboHud").textContent=0;document.querySelector("#miss").textContent=0;document.querySelector("#time").textContent=60;document.querySelector("#fill").style.width="0";document.querySelector("#special").classList.remove("ready");
+ document.querySelector("#speech").textContent="“좋아, 재료부터 손질해 보자꾸나.”";
+ raf=requestAnimationFrame(loop);
+ clearInterval(timerInt);timerInt=setInterval(()=>{if(!running)return;time--;document.querySelector("#time").textContent=time;if(time<=0)finish(true)},1000);
+}
+function returnToIndex(){
+ try{
+  if(window.opener&&!window.opener.closed){window.opener.focus();window.close();return}
+ }catch(error){}
+ window.location.replace("index.html");
+}
+function finish(ok){
+ if(!running)return;running=false;cancelAnimationFrame(raf);clearInterval(timerInt);
+ if(ok)setTimeout(returnToIndex,3000);
+ document.querySelector("#end").classList.remove("hidden");
+ document.querySelector("#endTitle").textContent=ok?"🍲 할머니의 요리 완성!":"💥 부엌이 난리가 났어요!";
+ document.querySelector("#result").innerHTML=ok
+ ?`최종 점수 <b>${score}점</b><br>최대 콤보 <b>${maxCombo}</b><br>실수 <b>${miss}회</b><br><br>👵 “혼자 할 때보다 같이하니까 더 맛있네.”`
+ :`잘못된 물건을 너무 많이 썰었어요.<br><br>재료와 생활용품을 잘 구분해서 다시 도전해보세요!`;
+}
+document.querySelector("#start").onclick=()=>{document.querySelector("#intro").classList.add("hidden");startGame()};
+document.querySelector("#again").onclick=()=>{document.querySelector("#end").classList.add("hidden");startGame()};
+</script>
+</body>
+</html>

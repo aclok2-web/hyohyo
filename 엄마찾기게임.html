@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>우리 엄마 어디 갔어?!</title>
+<style>
+*{box-sizing:border-box} html,body{margin:0;min-height:100%;font-family:"Malgun Gothic","Noto Sans KR",sans-serif}
+body{background:linear-gradient(#f9dfbd,#fff4df);color:#3d2b22;overflow-x:hidden}
+#game{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px}
+.top{width:min(1000px,96vw);display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{margin:4px 0;font-size:clamp(25px,4vw,42px)} .round{font-weight:900;background:#fff7e8;border:2px solid #7a543a;border-radius:999px;padding:8px 15px}
+.info{min-height:64px;text-align:center;font-size:clamp(18px,2.5vw,26px);font-weight:900;padding:12px}
+.arena{position:relative;width:min(1000px,96vw);height:min(62vh,520px);min-height:390px;overflow:hidden;border:4px solid #7a543a;border-radius:26px;background-image:url("mom_game_garden_start.png");background-repeat:no-repeat;background-size:cover;background-position:center;box-shadow:0 12px 0 #c49c68;transition:background-image .7s ease,filter .7s ease}
+.arena.garden-frame{background-image:url("mom_game_garden_frames.png");background-size:200% 200%}
+.arena.frame-1{background-position:left top}.arena.frame-2{background-position:right top}
+.arena.frame-3{background-position:left bottom}.arena.frame-4{background-position:right bottom}
+.arena.final-garden{background-image:url("mom_game_garden_final.png");background-size:cover;background-position:center;filter:saturate(1.12) contrast(1.06)}
+.arena:before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:linear-gradient(#0000 55%,#0003);transition:background .7s ease}
+.arena.frame-2:before{background:#3c260014}.arena.frame-3:before{background:#35000020}.arena.frame-4:before,.arena.final-garden:before{background:#52000024}
+.arena>*{z-index:1}.arena .blackout,.arena .bus{z-index:30}
+.mom{position:absolute;width:118px;height:175px;bottom:54px;transition:filter .2s,transform .2s;user-select:none}
+.mom .body{position:relative;height:100%;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}.mom canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:auto;mix-blend-mode:normal}
+.mom.madeup .body:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 35% 46%,#ff8fa055 0 8px,transparent 9px),radial-gradient(circle at 65% 46%,#ff8fa055 0 8px,transparent 9px);animation:makeupGlow .55s ease-in-out 2 alternate}.mom.madeup .body:after{content:"";position:absolute;left:43%;top:51%;width:16%;height:5%;border-radius:50%;background:#c83f58aa;box-shadow:0 0 5px #fff}@keyframes makeupGlow{to{filter:brightness(1.18);transform:scale(1.03)}}
+.mom .tag{position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);background:#fff;border:2px solid #6e533e;border-radius:999px;padding:5px 10px;font-weight:900;white-space:nowrap}
+.mom.selectable{cursor:pointer}.mom.selectable:hover{filter:brightness(1.08);transform:scale(1.05)}
+.mom.wrong canvas{filter:drop-shadow(0 0 7px #e53e3e) drop-shadow(0 0 7px #e53e3e)}.mom.correct canvas{filter:drop-shadow(0 0 7px #39a852) drop-shadow(0 0 7px #39a852)}
+.bus{position:absolute;left:0;top:0;width:25%;height:100%;z-index:30;background-position:center;background-size:cover;background-repeat:no-repeat;opacity:0;pointer-events:none;filter:contrast(1.08) brightness(.9)}
+.bus.flash{animation:ghostFlash .68s ease-in-out both}@keyframes ghostFlash{0%{opacity:0}18%{opacity:1}72%{opacity:1}100%{opacity:0}}
+.blackout{position:absolute;inset:0;background:#111;z-index:30;opacity:0;pointer-events:none}.blackout.on{animation:blink .9s}.blackout.makeup{animation:makeupCurtain 1.5s}@keyframes blink{0%,100%{opacity:0}20%,75%{opacity:1}}@keyframes makeupCurtain{0%,100%{opacity:0}20%,78%{opacity:1}}
+.hand{animation:wave .35s infinite alternate}@keyframes wave{to{transform:rotate(4deg) translateY(-4px)}}
+.decoy-light canvas{filter:brightness(1.35) drop-shadow(0 0 8px #ffe66d) drop-shadow(0 0 18px #ffd43b);animation:decoyLight .7s infinite alternate}@keyframes decoyLight{to{filter:brightness(1.65) drop-shadow(0 0 13px #fff3a3) drop-shadow(0 0 28px #ffbf00)}}
+.controls{margin-top:22px;text-align:center}.btn{border:0;border-radius:15px;padding:14px 24px;background:#b85c38;color:white;font-size:20px;font-weight:900;cursor:pointer}
+.overlay{position:fixed;inset:0;background:#0009;z-index:50;display:grid;place-items:center;padding:20px}.card{width:min(560px,92vw);background:#fffaf0;border:4px solid #79563d;border-radius:25px;padding:28px;text-align:center;box-shadow:0 14px 0 #3c2b20}.card h2{font-size:34px;margin:0 0 14px}.card p{font-size:19px;line-height:1.65}.hidden{display:none}
+.jump-scare{position:fixed;inset:0;z-index:100;background:#000;display:grid;place-items:center;opacity:0;visibility:hidden;pointer-events:none;transition:none}
+.jump-scare.on{opacity:1;visibility:visible}.jump-scare img{width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1)}
+.jump-scare.reveal img{opacity:1;animation:scareZoom .18s ease-out both}@keyframes scareZoom{0%{transform:scale(1.22)}100%{transform:scale(1)}}
+.penalty{font-size:25px;color:#b22626;font-weight:1000}.small{font-size:14px;color:#78675b}
+@media(max-width:600px){.arena{min-height:420px}.mom{width:88px;height:140px}.top{align-items:flex-start}.round{font-size:14px}}
+@media (orientation:landscape) and (max-height:600px){
+ html,body{width:100%;height:100%;min-height:0;overflow:hidden}#game{height:100dvh;min-height:0;padding:4px 8px}
+ .top{height:34px}.top h1{font-size:20px;margin:0}.round{padding:4px 10px;font-size:12px}.info{min-height:34px;padding:4px;font-size:15px}
+ .arena{width:min(1000px,98vw);height:calc(100dvh - 76px);min-height:0;border-width:3px;border-radius:14px;box-shadow:none}
+ .mom{width:82px;height:122px;bottom:34px}.mom .tag{bottom:-25px;padding:3px 7px;font-size:11px}.controls{margin:0}.card{max-height:94dvh;overflow:hidden;padding:14px}.card h2{font-size:24px}.card p{font-size:14px;line-height:1.35}.btn{padding:9px 16px;font-size:16px}
+}
+</style>
+</head>
+<body>
+<div id="game">
+ <div class="top"><h1>👩 우리 엄마 어디 갔어?!</h1><div class="round">ROUND <span id="r">1</span> / 3</div></div>
+ <div class="info" id="info">진짜 엄마를 잘 기억하세요!</div>
+ <div class="arena" id="arena">
+   <div class="blackout" id="blackout"></div>
+   <div class="bus" id="bus" aria-hidden="true"></div>
+ </div>
+ <div class="controls"><button class="btn hidden" id="startBtn">섞기 시작!</button></div>
+</div>
+
+<div class="overlay" id="intro">
+ <div class="card"><h2>우리 엄마를 찾아라!</h2>
+ <p>첫 번째 인물이 <b>진짜 엄마</b>입니다.<br>나머지 세 아주머니가 엄마처럼 화장한 뒤 함께 자리를 섞습니다.<br><br>얼굴과 머리 모양을 잘 기억하고 진짜 엄마를 클릭하세요!</p>
+ <p class="small">화장과 옷차림에 속지 말고 처음 본 엄마의 특징을 기억하세요.</p>
+ <button class="btn" id="introBtn">게임 시작</button></div>
+</div>
+
+<div class="overlay hidden" id="message">
+ <div class="card"><h2 id="msgTitle"></h2><p id="msgText"></p><div id="count" class="penalty"></div><button class="btn hidden" id="msgBtn">계속하기</button></div>
+</div>
+<div class="jump-scare" id="jumpScare" aria-hidden="true"><img src="mom_jumpscare.png" alt="갑자기 나타난 무서운 얼굴"></div>
+
+<script>
+const arena=document.getElementById('arena'), info=document.getElementById('info');
+const bus=document.getElementById('bus'), blackout=document.getElementById('blackout');
+const msg=document.getElementById('message'), msgBtn=document.getElementById('msgBtn');
+let round=1, trueMom=0, moms=[], moving=false, selectable=false, timers=[], madeUp=false;
+const jumpScare=document.getElementById('jumpScare');
+let jumpScareActive=false;
+let completionSent=false;
+const originalSheet=new Image(),momSheet=new Image();
+originalSheet.src="original_characters_transparent.png?v=2";momSheet.src="mom_directions_transparent.png?v=2";
+const ORIGINAL_CROP=[
+ {x:.035,y:.25,w:.22,h:.46},
+ {x:.275,y:.255,w:.22,h:.46},
+ {x:.525,y:.255,w:.22,h:.46},
+ {x:.765,y:.245,w:.21,h:.47}
+];
+const MOM_CROP={
+ up:{x:.405,y:.07,w:.19,h:.38},
+ down:{x:.405,y:.52,w:.19,h:.39},
+ left:{x:.105,y:.35,w:.21,h:.38},
+ right:{x:.69,y:.35,w:.21,h:.38}
+};
+const wrongLines=["내가 네 엄마로 보이니? 😆","엄마 얼굴도 모르니?","나는 다른 집 엄마란다!","앗! 사람 잘못 봤어요!"];
+
+function clearTimers(){timers.forEach(clearTimeout);timers=[]}
+function later(fn,ms){let t=setTimeout(fn,ms);timers.push(t)}
+function setGardenStage(stage){
+ arena.classList.remove("garden-frame","frame-1","frame-2","frame-3","frame-4","final-garden");
+ if(stage==="start")return;
+ if(stage==="final"){arena.classList.add("final-garden");return}
+ arena.classList.add("garden-frame",`frame-${stage}`);
+}
+function notifyIndexComplete(){
+ if(completionSent)return;
+ completionSent=true;
+ try{localStorage.setItem("mom_find_complete",String(Date.now()))}catch(error){console.warn("엄마찾기 완료 저장 실패",error)}
+ if(window.opener&&!window.opener.closed){
+   window.opener.postMessage({type:"mom-find-complete"},"*");
+   later(()=>window.close(),1800);
+ }else{
+   later(()=>{window.location.href="index.html"},1800);
+ }
+}
+function makeMoms(){
+ moms.forEach(x=>x.remove()); moms=[];
+ for(let i=0;i<4;i++){
+   const d=document.createElement('div'); d.className=`mom person-${i}`; d.dataset.i=i;
+   const body=document.createElement('div'); body.className='body';
+   const canvas=document.createElement('canvas');canvas.width=118;canvas.height=175;body.appendChild(canvas);
+   d._canvas=canvas;d._direction="down";d._lastX=null;d._lastBottom=54;
+   const tag=document.createElement('div'); tag.className='tag'; tag.textContent=`엄마 후보 ${i+1}`;
+   d.append(body,tag); arena.appendChild(d); moms.push(d);drawMom(d);
+   d.onclick=()=>pick(i,d);
+ }
+}
+function positions(){
+ const w=arena.clientWidth, mw=moms[0]?.offsetWidth||100;
+ return [0.08,0.31,0.56,0.80].map(v=>Math.min(w-mw-8,Math.max(8,w*v-mw/2)));
+}
+function drawMom(mom){
+ const image=madeUp?momSheet:originalSheet;if(!image.complete||!image.naturalWidth)return;
+ const ctx=mom._canvas.getContext("2d"),person=Number(mom.dataset.i),crop=madeUp?(MOM_CROP[mom._direction]||MOM_CROP.down):ORIGINAL_CROP[person];
+ const frameWidth=image.naturalWidth*crop.w,frameHeight=image.naturalHeight*crop.h;
+ const sx=image.naturalWidth*crop.x,sy=image.naturalHeight*crop.y;
+ ctx.clearRect(0,0,mom._canvas.width,mom._canvas.height);
+ const drawWidth=Math.min(mom._canvas.width,Math.round(mom._canvas.height*(frameWidth/frameHeight)));
+ const drawX=Math.round((mom._canvas.width-drawWidth)/2);
+ ctx.drawImage(image,sx,sy,frameWidth,frameHeight,drawX,0,drawWidth,mom._canvas.height);
+}
+[originalSheet,momSheet].forEach(image=>image.onload=()=>moms.forEach(drawMom));
+originalSheet.onerror=()=>{info.textContent="original_characters.png를 HTML과 같은 폴더에 넣어주세요."};
+momSheet.onerror=()=>{info.textContent="mom_directions.png를 HTML과 같은 폴더에 넣어주세요."};
+function place(order=[0,1,2,3],walk=false){
+ const ps=positions();
+ const levels=[54,88,122,150];
+ order.forEach((momIndex,pos)=>{const m=moms[momIndex],x=ps[pos],bottom=walk?levels[Math.floor(Math.random()*levels.length)]:54,dx=m._lastX===null?0:x-m._lastX,dy=bottom-m._lastBottom;if(Math.abs(dx)>=Math.abs(dy))m._direction=dx<0?"left":dx>0?"right":m._direction;else m._direction=dy>0?"up":"down";m._lastX=x;m._lastBottom=bottom;m.style.left=x+"px";m.style.bottom=bottom+"px";drawMom(m)});
+}
+function showTarget(){
+ setGardenStage(round);
+ selectable=false;madeUp=false;makeMoms();place();
+ moms.forEach((m,i)=>{m._direction="down";drawMom(m);m.classList.remove("madeup");m.style.opacity=i===trueMom?"1":".22";m.querySelector(".tag").textContent=i===trueMom?"⭐ 진짜 엄마":"다른 인물"});
+ info.textContent="진짜 엄마를 3초 동안 기억하세요!";
+ later(startMakeup,3000);
+}
+function startMakeup(){
+ info.textContent="세 아주머니가 엄마처럼 화장하고 있어요! 💄";
+ blackout.classList.remove("on","makeup");void blackout.offsetWidth;blackout.classList.add("makeup");
+ later(()=>{madeUp=true;moms.forEach(m=>{m.style.opacity="1";m.classList.add("madeup");m.querySelector(".tag").textContent="엄마 후보";drawMom(m)})},500);
+ later(()=>{blackout.classList.remove("makeup");startShuffle()},1550);
+}
+function shuffleOrder(){
+ let a=[0,1,2,3]; for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a;
+}
+function animateShuffle(duration,speed){
+ moving=true; let end=Date.now()+duration;
+ function step(){
+   if(Date.now()>=end){moving=false;finishShuffle();return}
+   place(shuffleOrder(),true);
+   moms.forEach(m=>{m.style.transition=`left ${speed}ms cubic-bezier(.4,0,.2,1),bottom ${speed}ms cubic-bezier(.4,0,.2,1)`});
+   later(()=>moms.forEach(m=>{m._direction="down";drawMom(m)}),speed+20);
+   later(step,speed+80);
+ } step();
+}
+function startShuffle(){
+ info.textContent=round===1?"엄마들이 움직이기 시작합니다!":round===2?"이번엔 버스까지 지나갑니다!":"마지막 라운드! 속임수에 주의하세요!";
+ animateShuffle(round===1?6000:round===2?7500:9000,round===1?850:round===2?620:480);
+ if(round>=2) later(busPass,2800);
+ if(round===3){
+   later(()=>{blackout.classList.remove("on");void blackout.offsetWidth;blackout.classList.add("on");place(shuffleOrder())},5200);
+   later(()=>{moms.filter((_,i)=>i!==trueMom).forEach(m=>m.classList.add("hand","decoy-light"));info.textContent="가짜 엄마들에게 불이 들어왔어요! 진짜 엄마를 놓치지 마세요! 💡"},6800);
+ }
+}
+function busPass(){
+ for(let i=0;i<4;i++){
+  later(()=>{
+   bus.style.left=`${i*25}%`;
+   bus.style.backgroundImage=`url("mom_distraction_${i+1}.png")`;
+   bus.classList.remove("flash");void bus.offsetWidth;bus.classList.add("flash");
+   later(()=>place(shuffleOrder(),true),320);
+  },i*720);
+ }
+ later(()=>{bus.classList.remove("flash");if(round===3)startJumpScare()},4*720);
+}
+function scream(){
+ try{
+  speechSynthesis.cancel();
+  const cry=new SpeechSynthesisUtterance("꺄아아아악!");
+  cry.lang="ko-KR";cry.pitch=1.9;cry.rate=.72;cry.volume=1;
+  speechSynthesis.speak(cry);
+ }catch(e){}
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext,ctx=new AC(),now=ctx.currentTime;
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type="sawtooth";osc.frequency.setValueAtTime(930,now);osc.frequency.exponentialRampToValueAtTime(430,now+.85);
+  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.22,now+.025);gain.gain.exponentialRampToValueAtTime(.0001,now+1);
+  osc.connect(gain).connect(ctx.destination);osc.start(now);osc.stop(now+1);
+ }catch(e){}
+}
+function startJumpScare(){
+ jumpScareActive=true;jumpScare.classList.remove("on","reveal");
+ later(()=>{jumpScare.classList.add("on","reveal");scream()},1500);
+ later(()=>{jumpScare.classList.remove("on","reveal");jumpScareActive=false;if(!moving)finishShuffle()},2750);
+}
+function finishShuffle(){
+ if(jumpScareActive)return;
+ moms.forEach(m=>{m.style.transition="";m._direction="down";drawMom(m);m.classList.remove("hand");m.classList.add("selectable")});
+ selectable=true; info.textContent="멈췄다! 진짜 엄마를 찾아 클릭하세요!";
+}
+function pick(i,el){
+ if(!selectable||moving)return;
+ selectable=false;moms.forEach(m=>m.classList.remove("selectable","decoy-light"));
+ if(i===trueMom){
+   el.classList.add("correct"); info.textContent="찾았다! 🎉";
+   later(()=>showCorrect(),500);
+ }else{
+   el.classList.add("wrong"); showWrong(i,el);
+ }
+}
+function showWrong(i,el){
+ msg.classList.remove("hidden"); document.getElementById("msgTitle").textContent="앗, 다른 엄마다!";
+ document.getElementById("msgText").textContent=wrongLines[i];
+ msgBtn.classList.add("hidden"); let s=5; document.getElementById("count").textContent=`${s}초 후 다시 선택할 수 있어요.`;
+ let iv=setInterval(()=>{s--;document.getElementById("count").textContent=s>0?`${s}초 후 다시 선택할 수 있어요.`:"다시 찾아보세요!";if(s<=0){clearInterval(iv);setTimeout(()=>{msg.classList.add("hidden");el.classList.remove("wrong");selectable=true;moms.forEach(m=>m.classList.add("selectable"))},500)}},1000);
+}
+function showCorrect(){
+ msg.classList.remove("hidden"); document.getElementById("count").textContent="";
+ document.getElementById("msgTitle").textContent="엄마를 찾았어요! 🎉";
+ document.getElementById("msgText").textContent=round<3?"다음 라운드는 더 빠르고 더 헷갈립니다!":"세 번 모두 진짜 엄마를 찾아냈습니다!";
+ msgBtn.textContent=round<3?"다음 라운드":"처음부터";
+ msgBtn.classList.remove("hidden");
+ if(round===3){setGardenStage(4);notifyIndexComplete();later(()=>setGardenStage("final"),900)}
+}
+msgBtn.onclick=()=>{
+ msg.classList.add("hidden");
+ if(round<3){round++;document.getElementById("r").textContent=round;trueMom=0;showTarget()}
+ else{round=1;document.getElementById("r").textContent=1;trueMom=0;showTarget()}
+}
+document.getElementById("introBtn").onclick=()=>{document.getElementById("intro").classList.add("hidden");trueMom=0;showTarget()}
+setGardenStage("start");
+window.addEventListener("resize",()=>{if(moms.length)place(shuffleOrder())});
+</script>
+</body>
+</html>

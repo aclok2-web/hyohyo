@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>진짜 엄마를 찾아라!</title>
+    
+<style>
+    *{
+        box-sizing:border-box;
+    }
+
+    html, body{
+        margin:0;
+        width:100%;
+        min-height:100%;
+        font-family:'Malgun Gothic',sans-serif;
+    }
+
+    body{
+        color:#3d2c25;
+        text-align:center;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:flex-start;
+        min-height:100dvh;
+        padding:24px 16px 32px;
+        background:
+            linear-gradient(rgba(255,244,232,.72), rgba(111,67,45,.48)),
+            url('memory_background.png') center center / cover fixed no-repeat;
+        position:relative;
+        overflow-x:hidden;
+    }
+
+    body::before{
+        content:'';
+        position:fixed;
+        inset:0;
+        background:rgba(68,38,26,.16);
+        pointer-events:none;
+        z-index:0;
+    }
+
+    body > *{
+        position:relative;
+        z-index:1;
+    }
+
+    .game-panel{
+        width:min(94vw,980px);
+        background:rgba(255,250,244,.90);
+        border:1px solid rgba(255,255,255,.65);
+        border-radius:24px;
+        padding:24px;
+        box-shadow:0 18px 55px rgba(70,37,23,.28);
+        backdrop-filter:blur(8px);
+    }
+
+    h1{
+        color:#6b3f2b;
+        margin:0 0 12px;
+        font-size:clamp(28px,6vw,46px);
+        text-shadow:0 2px 12px rgba(255,255,255,.65);
+    }
+
+    p.description{
+        font-size:clamp(16px,3.6vw,21px);
+        line-height:1.7;
+        margin:0 0 24px;
+        color:#5f4638;
+    }
+
+    .image-container{
+        max-width:900px;
+        width:100%;
+        margin:0 auto 20px;
+        border:5px solid rgba(215,188,168,.85);
+        border-radius:18px;
+        overflow:hidden;
+        background-color:#fff;
+        box-shadow:0 10px 28px rgba(69,40,28,.22);
+    }
+
+    .image-container img{
+        width:100%;
+        display:block;
+    }
+
+    .button-group{
+        display:grid;
+        grid-template-columns:repeat(3,minmax(90px,1fr));
+        gap:12px;
+        margin:0 auto 24px;
+        width:min(100%,640px);
+    }
+
+    button{
+        font-size:clamp(17px,4vw,21px);
+        padding:13px 16px;
+        cursor:pointer;
+        background:linear-gradient(180deg,#a26f58,#7c4f3d);
+        color:white;
+        border:none;
+        border-radius:14px;
+        transition:transform .12s,filter .2s;
+        box-shadow:0 6px 14px rgba(78,45,31,.24);
+        font-weight:700;
+        touch-action:manipulation;
+    }
+
+    button:hover{
+        filter:brightness(1.08);
+    }
+
+    button:active{
+        transform:scale(.97);
+    }
+
+    #result-message{
+        font-size:clamp(17px,4vw,22px);
+        font-weight:bold;
+        min-height:48px;
+        line-height:1.6;
+    }
+
+    .correct{
+        color:#2e7d32;
+    }
+
+    .wrong{
+        color:#c62828;
+    }
+
+    .password-clue{
+        display:block;
+        margin-top:15px;
+        padding:15px;
+        background:rgba(255,224,130,.92);
+        color:#d84315;
+        border-radius:12px;
+        font-size:1.05em;
+        border:2px dashed #d84315;
+    }
+
+    .password-letter{
+        font-size:2em;
+        font-weight:900;
+        margin:0 10px;
+    }
+
+    @media (max-width:560px){
+        body{
+            padding:12px 10px 20px;
+            background-attachment:scroll;
+        }
+
+        .game-panel{
+            padding:18px 14px;
+            border-radius:18px;
+        }
+
+        .button-group{
+            grid-template-columns:repeat(2,minmax(110px,1fr));
+        }
+
+        .image-container{
+            border-width:3px;
+        }
+    }
+</style>
+
+</head>
+<body>
+<div class="game-panel">
+
+    <h1>진짜 엄마를 찾아라!</h1>
+    <p class="description">여섯 명의 모습 중, 진짜 우리 어머니는 몇 번일까요?<br>가장 기억에 남는 모습을 선택해 보세요.</p>
+
+    <div class="image-container">
+        <img src="moms.jpg" alt="여섯 명의 어머니 모습">
+    </div>
+
+    <div class="button-group">
+        <button onclick="checkAnswer(1)">1번</button>
+        <button onclick="checkAnswer(2)">2번</button>
+        <button onclick="checkAnswer(3)">3번</button>
+        <button onclick="checkAnswer(4)">4번</button>
+        <button onclick="checkAnswer(5)">5번</button>
+        <button onclick="checkAnswer(6)">6번</button>
+    </div>
+
+    <div id="result-message"></div>
+
+    <script>
+        function checkAnswer(selectedNumber) {
+            const resultElement = document.getElementById('result-message');
+            
+            // 클래스를 초기화합니다.
+            resultElement.className = '';
+
+            if (selectedNumber === 1) {
+                // 1번을 선택했을 때 (정답 + 비밀번호 O 등장)
+                resultElement.innerHTML = `
+                    정답입니다! 어머니가 늘 하시던 편안한 차림이네요.
+                    <span class="password-clue">
+                        비밀번호 단서 획득: <span class="password-letter">O</span><br>
+                        <span style="font-size: 0.8em; color: #555;">(다음 방을 열기 위해 이 알파벳을 꼭 기억하세요!)</span>
+                    </span>
+                `;
+                resultElement.classList.add('correct');
+            } else {
+                // 2~6번을 선택했을 때 (오답)
+                resultElement.innerHTML = `앗, 아닙니다. ${selectedNumber}번은 다른 분 같네요. 다시 한번 자세히 살펴보세요!`;
+                resultElement.classList.add('wrong');
+            }
+        }
+    </script>
+
+</div>
+</body>
+</html>

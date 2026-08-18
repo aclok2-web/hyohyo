@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>효찾기 게임</title>
+  <style>
+    :root {
+      --ink: #f7efe2;
+      --panel: rgba(18, 14, 12, 0.82);
+      --line: rgba(255, 228, 174, 0.24);
+      --gold: #f3c45f;
+      --red: #d25d4d;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Malgun Gothic", "Noto Sans KR", sans-serif;
+      color: var(--ink);
+      background: #14110f;
+      overflow-x: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .game {
+      width: min(1100px, 100%);
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: end;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 52px);
+      letter-spacing: 0;
+    }
+
+    .summary {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .chip {
+      min-width: 100px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      text-align: center;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+    }
+
+    .chip span {
+      display: block;
+      font-size: 12px;
+      opacity: 0.76;
+      margin-bottom: 2px;
+    }
+
+    .chip strong {
+      font-size: 24px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stage {
+      position: relative;
+      width: 100%;
+      height: min(62vh, 560px);
+      min-height: 360px;
+      overflow: hidden;
+      border: 3px solid #2e2520;
+      border-radius: 8px;
+      background: #080706;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.38);
+      cursor: crosshair;
+    }
+
+    .track {
+      position: absolute;
+      inset: 0 auto 0 0;
+      height: 100%;
+      display: flex;
+      will-change: transform;
+    }
+
+    .photo {
+      flex: 0 0 auto;
+      width: min(68vw, 640px);
+      height: 100%;
+      background-image: url("assets/objects/living_family_photo.png");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: contain;
+      filter: saturate(1.02) contrast(1.05);
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(0,0,0,.62), transparent 18%, transparent 82%, rgba(0,0,0,.62)),
+        radial-gradient(circle at center, transparent 42%, rgba(0,0,0,.36));
+    }
+
+    .hyo {
+      position: absolute;
+      z-index: 2;
+      width: 52px;
+      height: 52px;
+      border: none;
+      border-radius: 50%;
+      color: #fff8d7;
+      background: rgba(70, 20, 14, 0.42);
+      font-family: "Batang", "Noto Serif KR", serif;
+      font-size: 36px;
+      font-weight: 900;
+      line-height: 1;
+      text-shadow:
+        0 0 8px rgba(255, 226, 125, .95),
+        0 2px 0 rgba(0,0,0,.7);
+      box-shadow:
+        0 0 0 2px rgba(255, 214, 121, .36),
+        0 0 24px rgba(255, 199, 83, .45);
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      animation: breathe 0.8s ease-in-out infinite;
+    }
+
+    .hyo.found {
+      animation: pop 0.36s ease;
+      background: rgba(65, 132, 80, 0.8);
+    }
+
+    .message {
+      min-height: 44px;
+      margin: 12px 0;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button.control {
+      border: none;
+      border-radius: 8px;
+      padding: 12px 18px;
+      color: #211612;
+      background: linear-gradient(#f7d37d, #d39536);
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(0,0,0,.25);
+    }
+
+    button.control.secondary {
+      color: var(--ink);
+      background: #302821;
+      border: 1px solid var(--line);
+    }
+
+    button.control:disabled {
+      opacity: .52;
+      cursor: not-allowed;
+    }
+
+    @keyframes breathe {
+      0%, 100% { scale: 1; }
+      50% { scale: 1.08; }
+    }
+
+    @keyframes pop {
+      0% { scale: .7; opacity: .7; }
+      65% { scale: 1.28; opacity: 1; }
+      100% { scale: 1; opacity: 1; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 8px; }
+      .topbar { grid-template-columns: 1fr; align-items: stretch; }
+      .summary { justify-content: stretch; }
+      .chip { flex: 1 1 30%; min-width: 0; }
+      .chip strong { font-size: 20px; }
+      .stage { height: 58vh; min-height: 320px; }
+      .photo { width: 86vw; }
+      .hyo { width: 46px; height: 46px; font-size: 31px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html, body { width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+      body { padding: 5px; align-items: stretch; }
+      .game { width: 100%; height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+      .topbar { margin-bottom: 5px; gap: 6px; }
+      .topbar h1 { font-size: 18px; margin: 0; }
+      .board { flex: 1; min-height: 0; }
+      .card, .modal-card { max-height: 94dvh; overflow: hidden; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <div class="topbar">
+      <div>
+        <h1>효를 찾아라</h1>
+        <p class="message" id="message">가족사진이 빠르게 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.</p>
+      </div>
+      <div class="summary">
+        <div class="chip"><span>찾은 효</span><strong id="foundValue">0 / 5</strong></div>
+        <div class="chip"><span>속도</span><strong id="speedValue">빠름</strong></div>
+        <div class="chip"><span>실수</span><strong id="missValue">0</strong></div>
+      </div>
+    </div>
+
+    <section class="stage" id="stage" aria-label="움직이는 가족사진 속 효 찾기">
+      <div class="track" id="track">
+        <div class="photo"></div>
+        <div class="photo"></div>
+        <div class="photo"></div>
+        <div class="photo"></div>
+      </div>
+      <button class="hyo" id="hyoTarget" type="button" aria-label="효">孝</button>
+    </section>
+
+    <div class="controls">
+      <button class="control" id="startBtn">게임 시작</button>
+      <button class="control secondary" id="resetBtn">처음부터</button>
+    </div>
+  </main>
+
+  <script>
+    const TOTAL_HYO = 5;
+    const SPEEDS = [680, 520, 360, 145, 70, 0];
+    const SPEED_LABELS = ["매우 빠름", "빠름", "조금 빠름", "식별 가능", "느림", "멈춤"];
+
+    const stage = document.getElementById("stage");
+    const track = document.getElementById("track");
+    const target = document.getElementById("hyoTarget");
+    const message = document.getElementById("message");
+    const foundValue = document.getElementById("foundValue");
+    const speedValue = document.getElementById("speedValue");
+    const missValue = document.getElementById("missValue");
+    const startBtn = document.getElementById("startBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    let found = 0;
+    let misses = 0;
+    let running = false;
+    let trackX = 0;
+    let hyoX = 0;
+    let hyoY = 0;
+    let lastTime = 0;
+    let rafId = 0;
+
+    function photoWidth() {
+      const firstPhoto = track.querySelector(".photo");
+      return firstPhoto ? firstPhoto.getBoundingClientRect().width : stage.clientWidth;
+    }
+
+    function currentSpeed() {
+      return SPEEDS[Math.min(found, SPEEDS.length - 1)];
+    }
+
+    function updateUi() {
+      foundValue.textContent = `${found} / ${TOTAL_HYO}`;
+      speedValue.textContent = SPEED_LABELS[Math.min(found, SPEED_LABELS.length - 1)];
+      missValue.textContent = misses;
+    }
+
+    function placeHyo() {
+      const rect = stage.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      hyoX = -60 - Math.random() * width * 0.6;
+      hyoY = Math.max(54, Math.min(height - 54, height * (0.22 + Math.random() * 0.58)));
+      target.classList.remove("found");
+      target.style.display = "block";
+      target.style.left = `${hyoX}px`;
+      target.style.top = `${hyoY}px`;
+    }
+
+    function resetGame() {
+      cancelAnimationFrame(rafId);
+      found = 0;
+      misses = 0;
+      running = false;
+      trackX = 0;
+      lastTime = 0;
+      track.style.transform = "translateX(0px)";
+      placeHyo();
+      updateUi();
+      startBtn.disabled = false;
+      message.textContent = "가족사진이 빠르게 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.";
+    }
+
+    function startGame() {
+      cancelAnimationFrame(rafId);
+      found = 0;
+      misses = 0;
+      running = true;
+      trackX = 0;
+      lastTime = performance.now();
+      placeHyo();
+      updateUi();
+      startBtn.disabled = true;
+      message.textContent = "움직이는 가족사진 속 효를 클릭하세요. 찾을수록 사진이 느려집니다.";
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function tick(now) {
+      if (!running) return;
+      const dt = Math.min(0.04, (now - lastTime) / 1000);
+      lastTime = now;
+
+      const speed = currentSpeed();
+      const width = photoWidth();
+      trackX = (trackX + speed * dt) % width;
+      track.style.transform = `translateX(${trackX - width}px)`;
+
+      hyoX += speed * dt;
+      if (hyoX > stage.clientWidth + 70) {
+        hyoX = -70 - Math.random() * stage.clientWidth * 0.5;
+        hyoY = Math.max(54, Math.min(stage.clientHeight - 54, stage.clientHeight * (0.22 + Math.random() * 0.58)));
+      }
+
+      target.style.left = `${hyoX}px`;
+      target.style.top = `${hyoY}px`;
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function foundHyo(event) {
+      event.stopPropagation();
+      if (!running) return;
+
+      found += 1;
+      target.classList.add("found");
+      updateUi();
+
+      if (found >= TOTAL_HYO) {
+        running = false;
+        cancelAnimationFrame(rafId);
+        track.style.transform = `translateX(${trackX - photoWidth()}px)`;
+        target.style.display = "none";
+        startBtn.disabled = false;
+        message.textContent = "모든 효를 찾았습니다. 가족사진이 멈추고 소중한 기억이 또렷해졌습니다.";
+        updateUi();
+        notifyCompletion();
+        return;
+      }
+
+      if (found === 3) {
+        message.textContent = "세 번째 효를 찾았습니다. 이제 가족사진을 식별할 수 있을 만큼 느려졌습니다.";
+      } else {
+        message.textContent = `효를 찾았습니다. 사진 속도가 조금 느려집니다. (${found} / ${TOTAL_HYO})`;
+      }
+
+      setTimeout(placeHyo, 260);
+    }
+
+    function missClick() {
+      if (!running) return;
+      misses += 1;
+      updateUi();
+      message.textContent = "아직 효가 아닙니다. 움직이는 사진 속에서 다시 찾아보세요.";
+    }
+
+    function notifyCompletion() {
+      try {
+        localStorage.setItem("hyo_find_complete", String(Date.now()));
+      } catch (error) {
+        console.warn("효찾기 완료 저장 실패", error);
+      }
+
+      if (window.opener && !window.opener.closed) {
+        window.opener.postMessage({ type: "hyo-find-complete" }, "*");
+        setTimeout(() => window.close(), 900);
+      } else {
+        message.textContent = "모든 효를 찾았습니다. 원래 게임 화면으로 돌아가면 쪽지가 나타납니다.";
+      }
+    }
+
+    target.addEventListener("click", foundHyo);
+    stage.addEventListener("click", missClick);
+    startBtn.addEventListener("click", startGame);
+    resetBtn.addEventListener("click", resetGame);
+    window.addEventListener("resize", () => {
+      if (!running) placeHyo();
+    });
+
+    resetGame();
+  </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>할머니 장바구니 역도왕</title>
+<style>
+*{box-sizing:border-box;touch-action:manipulation}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Malgun Gothic","Noto Sans KR",sans-serif;background:#efe4cf;color:#2d221b}
+body{display:grid;place-items:center}
+#game{position:relative;width:min(100vw,720px);height:100vh;max-height:980px;overflow:hidden;background-image:linear-gradient(#00000012,#00000026),url("grandma_market_background.png");background-size:cover;background-position:center;background-repeat:no-repeat}
+.awning,.shop,.crates{display:none}
+.awning{position:absolute;left:0;right:0;top:22%;height:70px;background:repeating-linear-gradient(90deg,#d95b45 0 70px,#fff1d9 70px 140px);border-block:6px solid #6f4930}
+.shop{position:absolute;left:7%;top:31%;width:220px;height:180px;background:#ead1aa;border:6px solid #7b5439}
+.shop:before{content:"시장";position:absolute;left:50%;top:12px;transform:translateX(-50%);font-size:30px;font-weight:1000}
+.crates{position:absolute;left:9%;top:47%;font-size:48px}
+.grandma{position:absolute;left:2%;bottom:15%;width:min(230px,31vw);height:38%;z-index:7;object-fit:contain;filter:drop-shadow(0 6px 3px #0005)}
+.player{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);width:min(430px,66vw);height:40%;z-index:9;transform-origin:50% 100%;object-fit:contain}
+.player.shake{animation:shake .12s infinite alternate}
+@keyframes shake{to{transform:translateX(-50%) rotate(2deg) translateY(-3px)}}
+.player.fail{animation:fall .7s forwards}
+@keyframes fall{to{transform:translateX(-50%) rotate(70deg) translateY(30px)}}
+.bags{display:none}
+.bags.lift{bottom:52%;font-size:82px}
+.speech{position:absolute;left:50%;top:5%;transform:translateX(-50%);z-index:15;background:#fffaf0;border:4px solid #76553c;border-radius:20px;padding:12px 18px;max-width:82%;font-weight:1000;text-align:center;box-shadow:0 7px 0 #b18d68}
+.top{position:absolute;left:12px;right:12px;top:12px;z-index:20;display:flex;justify-content:space-between;gap:8px}
+.pill{background:#0009;color:#fff;border:1px solid #ffffff33;border-radius:999px;padding:8px 12px;font-weight:900}
+.board{position:absolute;right:4%;top:25%;width:220px;background:#211a17;color:white;border:5px solid #ad875c;border-radius:18px;padding:14px;z-index:8;box-shadow:0 8px 0 #6d4d34}
+.board h3{margin:0 0 8px;text-align:center;color:#ffd96a}.row{display:flex;justify-content:space-between;margin:6px 0}
+.judges{display:flex;justify-content:center;gap:16px;margin-top:9px}.light{width:26px;height:26px;border-radius:50%;background:#555;border:3px solid #aaa}.light.on{background:#71d97b;box-shadow:0 0 14px #71d97b}
+.panel{position:absolute;left:12px;right:12px;bottom:12px;z-index:21;background:#fff9ecf2;border:4px solid #805d42;border-radius:22px;padding:14px;box-shadow:0 8px 0 #b4926d}
+.meterLabel{display:flex;justify-content:space-between;font-weight:900}.meter{height:28px;background:#ddd0b9;border-radius:999px;overflow:hidden;border:3px solid #6d523d;margin-top:8px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,#6bbd72 0 55%,#f1d05f 55% 78%,#d85c4d 78% 100%);transition:.07s}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.btn{border:0;border-radius:16px;padding:15px 12px;font-size:20px;font-weight:1000;cursor:pointer}.tap{background:#efad42;color:#3b260a;box-shadow:0 6px 0 #a56a20}.liftBtn{background:#c84d3c;color:white;box-shadow:0 6px 0 #7d2c24}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #777}.btn:disabled{opacity:.4}
+.status{min-height:31px;margin-top:9px;text-align:center;font-weight:1000;font-size:18px}
+.overlay{position:fixed;inset:0;background:#080604dd;z-index:50;display:grid;place-items:center;padding:20px}.card{width:min(560px,92vw);background:#fff7e8;border:5px solid #75543b;border-radius:28px;padding:28px;text-align:center;box-shadow:0 18px 60px #0008}
+.card h1,.card h2{margin:0 0 12px}.card p{font-size:18px;line-height:1.65}.start{border:0;border-radius:16px;padding:14px 24px;background:#bd5b3e;color:#fff;font-size:21px;font-weight:1000;cursor:pointer}
+.hidden{display:none}.weightPop{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:30;font-size:70px;font-weight:1000;color:#ffe05e;text-shadow:0 5px 0 #71351f,0 0 25px #ff8c39;opacity:0}
+.weightPop.show{animation:pop .8s}@keyframes pop{0%{opacity:0;scale:.5}30%{opacity:1;scale:1.15}100%{opacity:0;scale:1}}
+@media(max-width:620px){.grandma{font-size:70px}.player{font-size:90px}.bags{font-size:58px}.board{width:185px;font-size:13px}.speech{font-size:14px;top:9%}.btn{font-size:17px}.panel{padding:11px}}
+@media (orientation:landscape) and (max-height:600px){#game{width:100vw;height:100dvh;max-height:none}.speech{top:3%;padding:7px 12px;font-size:12px}.grandma{height:44%;bottom:17%}.player{height:44%;width:min(330px,44vw)}.board{top:18%;width:170px;padding:7px;font-size:11px}.panel{left:8px;right:8px;bottom:6px;padding:6px 10px;border-width:2px;border-radius:12px;box-shadow:none}.meter{height:16px;margin-top:3px}.controls{margin-top:4px}.btn{padding:7px;font-size:13px}.status{min-height:18px;margin-top:3px;font-size:12px}.card{max-height:94dvh;overflow:hidden;padding:14px}.card p{font-size:14px;line-height:1.35}}
+</style>
+</head>
+<body>
+<div id="game">
+ <div class="awning"></div><div class="shop"></div><div class="crates">🥬🍉🥔🧅</div>
+ <div class="top"><div class="pill">🏋️ 도전 <span id="round">1</span>/3</div><div class="pill">⭐ 점수 <span id="score">0</span></div></div>
+ <div class="speech" id="speech">👵 “이것 좀 들어줄 수 있겠니?”</div>
+ <img class="grandma" src="grandma_market_character_transparent.png" alt="장바구니를 든 할머니"><canvas class="player" id="player" width="480" height="330" aria-label="장바구니 덤벨을 드는 캐릭터"></canvas><div class="bags" id="bags"></div>
+ <div class="board"><h3>오늘의 장바구니 역도</h3><div class="row"><span>현재 중량</span><b><span id="weight">5</span>kg</b></div><div class="row"><span>개인 최고</span><b><span id="best">0</span>kg</b></div><div class="row"><span>도전 차수</span><b><span id="attempt">1</span>차</b></div><div class="judges"><div class="light" id="j1"></div><div class="light" id="j2"></div><div class="light" id="j3"></div></div></div>
+ <div class="weightPop" id="pop"></div>
+ <div class="panel">
+  <div class="meterLabel"><span>💪 힘 게이지</span><span id="powerTxt">0%</span></div>
+  <div class="meter"><div class="fill" id="fill"></div></div>
+  <div class="controls"><button class="btn tap" id="tapBtn">💥 연타해서 힘 모으기!</button><button class="btn liftBtn" id="liftBtn">🏋️ 들어 올리기!</button></div>
+  <div class="status" id="status">연타해서 힘을 모은 뒤 적절한 순간에 들어 올리세요.</div>
+ </div>
+</div>
+<div class="overlay" id="intro"><div class="card"><h1>🛍️ 할머니 장바구니 역도왕</h1><p>평범한 장바구니인데 왜 이렇게 무겁지?!<br><br><b>연타해서 힘 게이지를 올리고</b>, 너무 부족하지도 넘치지도 않을 때 <b>들어 올리기!</b><br><br>총 3단계의 장바구니 덤벨을 모두 들어보세요.</p><button class="start" id="start">역도 시작!</button></div></div>
+<div class="overlay hidden" id="end"><div class="card"><h2>🏆 장바구니 역도왕!</h2><p id="result"></p><button class="start" id="again">다시 도전하기</button></div></div>
+<script>
+const levels=[{kg:15,bags:"",label:"빨간 바구니 덤벨"},{kg:35,bags:"",label:"비닐봉지 덤벨"},{kg:60,bags:"",label:"쇼핑카트 덤벨"}];
+let round=0,power=0,score=0,best=0,attempt=1,running=false,decayTimer=null;
+const $=s=>document.querySelector(s);
+const lifterSheet=new Image();lifterSheet.src="market_lifter_stages_transparent.png?v=4";
+const lifterCols=[[205,380],[590,445],[1040,480]],lifterRows=[[80,330],[412,328],[742,282]];
+const lifterFrameCache=new Map();
+function transparentLifterFrame(row,col){
+ const key=`${row}:${col}`;if(lifterFrameCache.has(key))return lifterFrameCache.get(key);
+ const [sx,sw]=lifterCols[col],[sy,sh]=lifterRows[row],frame=document.createElement("canvas");frame.width=sw;frame.height=sh;
+ frame.getContext("2d").drawImage(lifterSheet,sx,sy,sw,sh,0,0,sw,sh);
+ lifterFrameCache.set(key,frame);return frame;
+}
+function renderLifter(phase="ready"){
+ const canvas=$("#player"),c=canvas.getContext("2d"),col=phase==="full"?2:phase==="half"?1:0,row=Math.min(2,round);
+ c.clearRect(0,0,canvas.width,canvas.height);if(!lifterSheet.complete||!lifterSheet.naturalWidth)return;
+ c.drawImage(transparentLifterFrame(row,col),0,0,canvas.width,canvas.height);
+}
+lifterSheet.onload=()=>renderLifter("ready");
+function needRange(){const kg=levels[round].kg,center=Math.min(88,58+kg*.25);return{min:center-9,max:center+8}}
+function updatePower(){power=Math.max(0,Math.min(100,power));$("#fill").style.width=power+"%";$("#powerTxt").textContent=Math.round(power)+"%";$("#player").classList.toggle("shake",power>20);renderLifter(power>=needRange().min*.55?"half":"ready")}
+function resetJudge(){["#j1","#j2","#j3"].forEach(id=>$(id).classList.remove("on"))}
+function render(){const lv=levels[round],r=needRange();$("#round").textContent=round+1;$("#weight").textContent=lv.kg;$("#bags").textContent=lv.bags;$("#attempt").textContent=attempt;$("#best").textContent=best;$("#speech").textContent=`👵 “${round===2?"마지막 쇼핑카트까지 들어보렴!":"이것 좀 들어줄 수 있겠니?"}”`;$("#status").textContent=`${lv.label} · ${lv.kg}kg 도전! 힘을 ${r.min}~${r.max}% 정도 모아보세요.`;power=0;updatePower();resetJudge();$("#player").className="player";$("#bags").className="bags";renderLifter("ready")}
+function tap(){if(!running)return;power+=2.8+Math.random()*2.2;updatePower()}
+function lift(){if(!running)return;const lv=levels[round],r=needRange();$("#tapBtn").disabled=$("#liftBtn").disabled=true;if(power>=r.min&&power<=r.max)success(lv);else fail(power<r.min?"힘이 부족했어요!":"너무 힘을 줘서 균형을 잃었어요!")}
+function success(lv){running=false;clearInterval(decayTimer);$("#bags").classList.add("lift");$("#player").classList.remove("shake");renderLifter("full");const add=500+lv.kg*10;score+=add;best=Math.max(best,lv.kg);$("#score").textContent=score;$("#best").textContent=best;$("#status").textContent="성공! 장바구니 덤벨을 완전히 들었습니다!";$("#pop").textContent=`${lv.kg}kg 성공!`;$("#pop").classList.remove("show");void $("#pop").offsetWidth;$("#pop").classList.add("show");setTimeout(()=>$("#j1").classList.add("on"),250);setTimeout(()=>$("#j2").classList.add("on"),430);setTimeout(()=>$("#j3").classList.add("on"),610);if(navigator.vibrate)navigator.vibrate([80,50,120]);setTimeout(()=>{if(round<levels.length-1){round++;attempt=1;running=true;$("#tapBtn").disabled=$("#liftBtn").disabled=false;render();startDecay()}else finishGame()},1500)}
+function fail(text){running=false;clearInterval(decayTimer);$("#player").classList.remove("shake");$("#player").classList.add("fail");$("#status").textContent=text+" 2초 후 다시 도전!";if(navigator.vibrate)navigator.vibrate([120,70,180]);setTimeout(()=>{attempt++;$("#tapBtn").disabled=$("#liftBtn").disabled=false;running=true;render();startDecay()},1800)}
+function startDecay(){clearInterval(decayTimer);decayTimer=setInterval(()=>{if(running){power-=1.2;updatePower()}},120)}
+function startGame(){round=0;power=score=best=0;attempt=1;running=true;$("#score").textContent=0;$("#tapBtn").disabled=$("#liftBtn").disabled=false;render();startDecay()}
+function returnToIndex(){
+ try{
+  if(window.opener&&!window.opener.closed){window.opener.focus();window.close();return}
+ }catch(error){}
+ window.location.replace("index.html");
+}
+function finishGame(){clearInterval(decayTimer);running=false;$("#end").classList.remove("hidden");$("#result").innerHTML=`3단계 장바구니 덤벨을 모두 들어 올렸습니다!<br><br>최고 중량 <b>${best}kg</b><br>최종 점수 <b>${score}점</b><br><br>👵 “그게 그렇게 무겁니?” 😄<br><br><small>3초 후 메인 게임으로 돌아갑니다.</small>`;setTimeout(returnToIndex,3000)}
+$("#tapBtn").onpointerdown=tap;$("#liftBtn").onclick=lift;document.addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();tap()}if(e.key==="Enter")lift()});$("#start").onclick=()=>{$("#intro").classList.add("hidden");startGame()};$("#again").onclick=()=>{$("#end").classList.add("hidden");startGame()};
+</script>
+</body></html>

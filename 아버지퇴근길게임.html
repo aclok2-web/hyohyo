@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>아빠의 퇴근길 내비게이션 게임</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;font-family:"Malgun Gothic","Noto Sans KR",sans-serif;background:#111;color:#fff;overflow:hidden}
+#app{height:100%;display:flex;flex-direction:column;background:#111}
+.top{background:#111827;padding:10px 12px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;z-index:1000}
+.title{font-size:18px;font-weight:900;margin-right:auto}
+.badge{background:#263247;border:1px solid #ffffff22;border-radius:999px;padding:7px 10px;font-size:13px}
+.btn{border:0;border-radius:12px;padding:9px 12px;font-weight:900;cursor:pointer;background:#e5e7eb;color:#172033}
+.btn.primary{background:#57d18c;color:#10251b}.btn.home{background:#ffca62;color:#3b2500}.btn.play{background:#63b3ff;color:#09223b}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+#map{flex:1;min-height:0}
+.panel{position:absolute;z-index:900;left:12px;right:12px;bottom:14px;pointer-events:none;display:flex;justify-content:center}
+.card{pointer-events:auto;width:min(520px,100%);background:#101827ee;border:1px solid #ffffff25;border-radius:20px;padding:14px;box-shadow:0 12px 35px #0008;backdrop-filter:blur(8px)}
+.status{font-size:14px;line-height:1.5;color:#dce7f5}
+.navbox{display:none;margin-top:10px;padding:13px;background:#0a1020;border-radius:15px}
+.navbox.show{display:block}
+.navrow{display:flex;gap:10px;align-items:center}
+.arrow{width:68px;height:68px;border-radius:18px;background:#1e2b43;display:grid;place-items:center;font-size:38px;flex:0 0 auto}
+.navtext{min-width:0}.navtext b{display:block;font-size:21px;margin-bottom:4px}.navtext span{font-size:14px;color:#c9d4e6}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.choice{border:0;border-radius:14px;background:#24324a;color:white;padding:12px 5px;font-size:24px;font-weight:900;cursor:pointer}
+.choice small{display:block;font-size:11px;margin-top:3px;color:#cad5e5}.choice:active{transform:scale(.97)}
+.message{min-height:22px;text-align:center;font-weight:900;margin-top:8px}.ok{color:#6fe6a1}.bad{color:#ff8080}
+.progress{height:7px;background:#ffffff18;border-radius:99px;margin-top:10px;overflow:hidden}.bar{height:100%;width:0;background:#62d996}
+.safety{font-size:11px;color:#ffdc8a;margin-top:8px;text-align:center}
+.modal{position:fixed;z-index:2000;inset:0;background:#050912e8;display:grid;place-items:center;padding:18px}
+.modal.hidden{display:none}.modalbox{width:min(480px,100%);background:#172033;border:1px solid #ffffff24;border-radius:25px;padding:25px;text-align:center}
+.modalbox h1{font-size:29px;margin:0 0 12px}.modalbox p{line-height:1.65;color:#d9e3f1}.big{font-size:42px;font-weight:1000;color:#ffda6b}
+.carIcon{font-size:28px;filter:drop-shadow(0 2px 2px #000)}
+.leaflet-control-attribution{font-size:9px!important}
+@media(max-width:620px){.top{padding:8px}.title{width:100%;font-size:17px}.btn{font-size:12px;padding:8px 9px}.panel{bottom:8px;left:7px;right:7px}.card{padding:11px}.arrow{width:58px;height:58px}.navtext b{font-size:18px}}
+@media (orientation:landscape) and (max-height:600px){.top{padding:4px 7px;gap:5px;flex-wrap:nowrap}.title{width:auto;font-size:14px}.badge{padding:4px 7px;font-size:10px}.btn{padding:5px 8px;font-size:11px}.panel{bottom:4px}.card{width:min(620px,76vw);padding:7px}.status{font-size:11px}.navbox{margin-top:4px;padding:6px}.arrow{width:44px;height:44px;font-size:27px}.navtext b{font-size:14px}.navtext span{font-size:11px}.choices{margin-top:5px;gap:5px}.choice{padding:5px;font-size:17px}.message{min-height:16px;margin-top:3px;font-size:12px}.progress{margin-top:3px}.safety{margin-top:3px}.modalbox{max-height:94dvh;overflow:hidden;padding:14px}.modalbox h1{font-size:22px}.modalbox p{font-size:13px;line-height:1.35}}
+
+/* Horror layer */
+#map.horror1{filter:saturate(.65) brightness(.92)}
+#map.horror2{filter:saturate(.45) sepia(.18) hue-rotate(-18deg) brightness(.82)}
+#map.horror3{filter:saturate(.25) sepia(.35) hue-rotate(-38deg) brightness(.70) contrast(1.12)}
+.glitch{animation:glitch .22s steps(2,end) 3}
+@keyframes glitch{
+  0%{transform:translate(0,0)}
+  25%{transform:translate(-4px,2px)}
+  50%{transform:translate(5px,-2px)}
+  75%{transform:translate(-2px,3px)}
+  100%{transform:translate(0,0)}
+}
+#horrorText{
+  position:absolute;z-index:1400;top:100px;left:50%;transform:translateX(-50%);
+  width:min(88%,520px);padding:10px 14px;border-radius:12px;
+  background:#18090de8;border:1px solid #8c1f2c;color:#ffb5bd;
+  text-align:center;font-weight:1000;opacity:0;pointer-events:none;
+  text-shadow:0 0 10px #ff304f66;
+}
+#horrorText.show{animation:horrorMsg 2.1s forwards}
+@keyframes horrorMsg{0%{opacity:0}10%,75%{opacity:1}100%{opacity:0}}
+#staticFX{
+  position:absolute;inset:0;z-index:1300;pointer-events:none;opacity:0;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 3px,#ffffff08 3px 4px),
+    radial-gradient(circle at center,transparent 0 50%,#0008 100%);
+}
+#staticFX.on{animation:staticPulse .7s}
+@keyframes staticPulse{0%{opacity:0}20%{opacity:.75}45%{opacity:.2}70%{opacity:.6}100%{opacity:0}}
+.fakeHomeIcon{font-size:32px;filter:drop-shadow(0 2px 2px #000)}
+
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top">
+    <div class="title">🚗 아빠의 퇴근길 · 내비게이션 미션</div>
+    <div class="badge">점수 <b id="score">0</b></div>
+    <div class="badge">실수 <b id="mistakes">0</b></div>
+    <button class="btn primary" id="setStart">① 출발지 찍기</button>
+    <button class="btn home" id="setHome">② 집 찍기</button>
+    <button class="btn" id="routeBtn" disabled>③ 경로 만들기</button>
+    <button class="btn play" id="playBtn" disabled>▶ 안내 시작</button>
+  </div>
+  <div id="map"></div><div id="horrorText"></div><div id="staticFX"></div>
+</div>
+
+<div class="panel">
+ <div class="card">
+   <div class="status" id="status">지도에서 <b>출발지</b>와 <b>집</b>을 차례로 찍어주세요.</div>
+   <div class="navbox" id="navbox">
+      <div class="navrow">
+        <div class="arrow" id="arrow">⬆️</div>
+        <div class="navtext">
+          <b id="navTitle">직진하세요</b>
+          <span id="navRoad">다음 안내를 확인하세요.</span>
+        </div>
+      </div>
+      <div class="choices" id="choices">
+        <button class="choice" data-dir="left">⬅️<small>좌회전</small></button>
+        <button class="choice" data-dir="straight">⬆️<small>직진</small></button>
+        <button class="choice" data-dir="right">➡️<small>우회전</small></button>
+      </div>
+      <div class="message" id="message"></div>
+      <div class="progress"><div class="bar" id="bar"></div></div>
+   </div>
+   <div class="safety">※ 교육·체험용 게임입니다. 실제 운전 중 조작하거나 길안내용으로 사용하지 마세요.</div>
+ </div>
+</div>
+
+<div class="modal" id="intro">
+  <div class="modalbox">
+    <h1>🏠 아빠를 집까지 안내하라!</h1>
+    <p>실제 지도에서 <b>아빠의 출발지</b>와 <b>우리 집</b>을 찍으면 자동차 경로가 만들어집니다.<br><br>
+    아빠가 길을 따라 이동하다 교차로에 도착하면<br><b>좌회전 · 직진 · 우회전</b> 중 올바른 방향을 골라주세요.</p>
+    <button class="btn home" id="introClose">지도 열기</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="endModal">
+ <div class="modalbox">
+   <h1>🏠 아빠가 집에 도착했어요!</h1>
+   <div class="big" id="finalScore">0점</div>
+   <p id="finalText">오늘도 무사히 퇴근 완료!</p>
+   <button class="btn primary" id="restart">다시 안내하기</button>
+ </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map=L.map('map',{zoomControl:true}).setView([36.8057,128.6240],14);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+ maxZoom:19,attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let mode='start',start=null,home=null,startMarker=null,homeMarker=null,routeLine=null;
+let routeCoords=[],checkpoints=[],checkpointIndex=0,carMarker=null,animating=false;
+let score=0,mistakes=0,routeDistance=0,routeDuration=0;
+let horrorStage=0,fakeHomeMarker=null,realHomeLatLng=null,navCorrupted=false;
+const statusEl=document.querySelector('#status'),navbox=document.querySelector('#navbox'),message=document.querySelector('#message');
+
+document.querySelector('#introClose').onclick=()=>document.querySelector('#intro').classList.add('hidden');
+document.querySelector('#setStart').onclick=()=>{mode='start';statusEl.innerHTML='지도에서 <b>아빠의 출발지</b>를 찍으세요.'};
+document.querySelector('#setHome').onclick=()=>{mode='home';statusEl.innerHTML='지도에서 <b>우리 집</b>을 찍으세요.'};
+
+map.on('click',e=>{
+ if(mode==='start'){
+   start=e.latlng;
+   if(startMarker)map.removeLayer(startMarker);
+   startMarker=L.marker(start,{title:'아빠 출발지'}).addTo(map).bindPopup('🚗 아빠 출발지').openPopup();
+   mode='home';statusEl.innerHTML='좋아요! 이제 지도에서 <b>우리 집</b>을 찍으세요.';
+ }else{
+   home=e.latlng; realHomeLatLng=e.latlng;
+   if(homeMarker)map.removeLayer(homeMarker);
+   homeMarker=L.marker(home,{title:'우리 집'}).addTo(map).bindPopup('🏠 우리 집').openPopup();
+   mode=null;statusEl.innerHTML='출발지와 집을 설정했습니다. <b>경로 만들기</b>를 누르세요.';
+ }
+ document.querySelector('#routeBtn').disabled=!(start&&home);
+});
+
+function maneuverToDir(m){
+ const type=m.type||'',mod=m.modifier||'';
+ if(type==='arrive'||type==='depart')return null;
+ if(mod.includes('left'))return 'left';
+ if(mod.includes('right'))return 'right';
+ if(mod==='straight'||mod==='slight straight')return 'straight';
+ if(type==='continue'||type==='new name')return 'straight';
+ if(type==='roundabout'||type==='rotary'){
+   if(mod.includes('left'))return 'left';
+   if(mod.includes('right'))return 'right';
+   return 'straight';
+ }
+ return null;
+}
+function dirKorean(d){return d==='left'?'좌회전':d==='right'?'우회전':'직진'}
+function dirArrow(d){return d==='left'?'⬅️':d==='right'?'➡️':'⬆️'}
+
+
+function flashStatic(){
+  const fx=document.querySelector('#staticFX');
+  fx.classList.remove('on'); void fx.offsetWidth; fx.classList.add('on');
+  document.querySelector('#app').classList.remove('glitch'); void document.querySelector('#app').offsetWidth; document.querySelector('#app').classList.add('glitch');
+  if(navigator.vibrate)navigator.vibrate([80,60,120]);
+}
+function horrorMessage(text){
+  const h=document.querySelector('#horrorText');
+  h.textContent=text; h.classList.remove('show'); void h.offsetWidth; h.classList.add('show');
+}
+function setHorrorStage(stage){
+  if(stage<=horrorStage)return;
+  horrorStage=stage;
+  const m=document.querySelector('#map');
+  m.classList.remove('horror1','horror2','horror3');
+  if(stage===1)m.classList.add('horror1');
+  if(stage===2)m.classList.add('horror2');
+  if(stage>=3)m.classList.add('horror3');
+  flashStatic();
+}
+function moveHomeMarkerTemporarily(){
+  if(!homeMarker || !realHomeLatLng)return;
+  const lat=realHomeLatLng.lat + (Math.random()-.5)*0.006;
+  const lng=realHomeLatLng.lng + (Math.random()-.5)*0.008;
+  homeMarker.setLatLng([lat,lng]).setPopupContent('🏠 우리 집...?');
+  horrorMessage('목적지가 변경되었습니다.');
+  flashStatic();
+  setTimeout(()=>{
+    homeMarker.setLatLng(realHomeLatLng).setPopupContent('🏠 우리 집');
+    horrorMessage('경로를 재탐색합니다...');
+  },2200);
+}
+function showFakeDestination(){
+  if(!realHomeLatLng || fakeHomeMarker)return;
+  const fake=[realHomeLatLng.lat+(Math.random()>.5?0.003:-0.003),realHomeLatLng.lng+(Math.random()>.5?0.004:-0.004)];
+  fakeHomeMarker=L.marker(fake,{
+    icon:L.divIcon({className:'',html:'<div class="fakeHomeIcon">🏠</div>',iconSize:[38,38],iconAnchor:[19,19]})
+  }).addTo(map).bindPopup('목적지');
+  horrorMessage('목적지 후보가 2개 감지되었습니다.');
+}
+function corruptNavText(cpIndex){
+  const n=document.querySelector('#navTitle');
+  const r=document.querySelector('#navRoad');
+  if(horrorStage===1 && cpIndex>=1){
+    n.textContent='다음 교차로에서 좌회전하세요.';
+    r.textContent='하지만 지도는 다른 방향을 가리키고 있습니다.';
+    navCorrupted=true;
+  }else if(horrorStage===2 && cpIndex>=2){
+    n.textContent='좌회전하세요.';
+    r.textContent='좌회전하세요. 좌회전하세요.';
+    navCorrupted=true;
+  }else if(horrorStage>=3 && cpIndex>=3){
+    n.textContent='좌회전하라고.';
+    r.textContent='경로를 재탐색할 수 없습니다.';
+    navCorrupted=true;
+  }
+}
+
+document.querySelector('#routeBtn').onclick=async()=>{
+ if(!start||!home)return;
+ statusEl.textContent='실제 도로 경로를 불러오는 중입니다...';
+ document.querySelector('#routeBtn').disabled=true;
+ try{
+   const url=`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${home.lng},${home.lat}?overview=full&geometries=geojson&steps=true`;
+   const res=await fetch(url);
+   if(!res.ok)throw new Error('route error');
+   const data=await res.json();
+   if(data.code!=='Ok'||!data.routes?.length)throw new Error('no route');
+   const route=data.routes[0];
+   routeDistance=route.distance;routeDuration=route.duration;
+   routeCoords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
+   if(routeLine)map.removeLayer(routeLine);
+   routeLine=L.polyline(routeCoords,{weight:7,opacity:.82}).addTo(map);
+   map.fitBounds(routeLine.getBounds(),{padding:[35,35]});
+
+   checkpoints=[];
+   const steps=route.legs.flatMap(l=>l.steps||[]);
+   for(const s of steps){
+     const d=maneuverToDir(s.maneuver||{});
+     if(!d)continue;
+     const loc=s.maneuver.location;
+     checkpoints.push({
+       latlng:[loc[1],loc[0]],
+       dir:d,
+       road:s.name||'이름 없는 도로',
+       instruction:dirKorean(d)
+     });
+   }
+   // 너무 잦은 안내는 게임성이 떨어지므로 최대 10개만 균등 추출
+   if(checkpoints.length>10){
+     const sampled=[];
+     for(let i=0;i<10;i++) sampled.push(checkpoints[Math.floor(i*(checkpoints.length-1)/9)]);
+     checkpoints=[...new Map(sampled.map(x=>[x.latlng.join(','),x])).values()];
+   }
+   statusEl.innerHTML=`경로 완성! 약 <b>${(routeDistance/1000).toFixed(1)}km</b> · 예상 ${(routeDuration/60).toFixed(0)}분 · 안내 미션 ${checkpoints.length}개`;
+   document.querySelector('#playBtn').disabled=false;
+ }catch(e){
+   statusEl.innerHTML='경로를 불러오지 못했습니다. 인터넷 연결을 확인하거나 출발지·집을 다시 찍어주세요.';
+ }finally{
+   document.querySelector('#routeBtn').disabled=false;
+ }
+};
+
+function nearestRouteIndex(latlng,from=0){
+ let best=from,bd=Infinity;
+ for(let i=from;i<routeCoords.length;i++){
+   const a=routeCoords[i],dx=a[0]-latlng[0],dy=a[1]-latlng[1],d=dx*dx+dy*dy;
+   if(d<bd){bd=d;best=i}
+ }
+ return best;
+}
+function carIcon(){
+ return L.divIcon({className:'',html:'<div class="carIcon">🚗</div>',iconSize:[34,34],iconAnchor:[17,17]});
+}
+function prepareCheckpointIndices(){
+ let from=0;
+ checkpoints.forEach(c=>{c.routeIndex=nearestRouteIndex(c.latlng,from);from=c.routeIndex});
+}
+
+document.querySelector('#playBtn').onclick=()=>{
+ if(!routeCoords.length)return;
+ score=0;mistakes=0;checkpointIndex=0; horrorStage=0; navCorrupted=false;
+ document.querySelector('#map').classList.remove('horror1','horror2','horror3');
+ if(fakeHomeMarker){map.removeLayer(fakeHomeMarker);fakeHomeMarker=null;}
+ document.querySelector('#score').textContent=0;document.querySelector('#mistakes').textContent=0;
+ navbox.classList.add('show');message.textContent='';
+ prepareCheckpointIndices();
+ if(carMarker)map.removeLayer(carMarker);
+ carMarker=L.marker(routeCoords[0],{icon:carIcon(),zIndexOffset:1000}).addTo(map);
+ statusEl.textContent='내비게이션 안내를 시작합니다. 아빠를 집까지 안내하세요!';
+ document.querySelector('#playBtn').disabled=true;
+ animateToCheckpoint(0,0);
+};
+
+function animateToCheckpoint(routeIndex,cpIndex){
+ if(!routeCoords.length)return;
+ animating=true;
+ const targetIndex=cpIndex<checkpoints.length?checkpoints[cpIndex].routeIndex:routeCoords.length-1;
+ let i=routeIndex;
+ function step(){
+   if(!animating)return;
+   if(i>=targetIndex){
+     animating=false;
+     if(cpIndex<checkpoints.length)showQuestion(cpIndex,i);
+     else finishGame();
+     return;
+   }
+   i+=Math.max(1,Math.floor((targetIndex-i)/80));
+   i=Math.min(i,targetIndex);
+   carMarker.setLatLng(routeCoords[i]);
+   if(i%12===0)map.panTo(routeCoords[i],{animate:true,duration:.2});
+   requestAnimationFrame(()=>setTimeout(step,22));
+ }
+ step();
+}
+function showQuestion(cpIndex,currentRouteIndex){
+ const c=checkpoints[cpIndex];
+
+ const ratio=checkpoints.length ? cpIndex/checkpoints.length : 0;
+ if(ratio>=0.25 && horrorStage<1){
+   setHorrorStage(1);
+   horrorMessage('경로와 안내 음성이 일치하지 않습니다.');
+ }
+ if(ratio>=0.48 && horrorStage<2){
+   setHorrorStage(2);
+   moveHomeMarkerTemporarily();
+ }
+ if(ratio>=0.68 && horrorStage<3){
+   setHorrorStage(3);
+   showFakeDestination();
+   horrorMessage('경로를 재탐색합니다...');
+ }
+
+ document.querySelector('#arrow').textContent='❓';
+ document.querySelector('#navTitle').textContent='어느 방향으로 안내할까요?';
+ document.querySelector('#navRoad').textContent=`${c.road} 부근 · ${cpIndex+1}/${checkpoints.length}번째 안내`;
+ navCorrupted=false;
+ setTimeout(()=>corruptNavText(cpIndex),180);
+ document.querySelector('#bar').style.width=((cpIndex/checkpoints.length)*100)+'%';
+ message.textContent='';
+ document.querySelectorAll('.choice').forEach(b=>{
+   b.disabled=false;
+   b.onclick=()=>{
+     const chosen=b.dataset.dir;
+     document.querySelectorAll('.choice').forEach(x=>x.disabled=true);
+     if(chosen===c.dir){
+       score+=100;
+       document.querySelector('#score').textContent=score;
+       document.querySelector('#arrow').textContent=dirArrow(c.dir);
+       document.querySelector('#navTitle').textContent=`정답! ${dirKorean(c.dir)}하세요`;
+       message.textContent='+100점 · 안내 성공!';
+       if(horrorStage>=2 && Math.random()<.45){setTimeout(()=>{flashStatic();horrorMessage('경로를 재탐색합니다...');},250);}
+       message.className='message ok';
+       setTimeout(()=>{
+         checkpointIndex=cpIndex+1;
+         animateToCheckpoint(currentRouteIndex,checkpointIndex);
+       },850);
+     }else{
+       mistakes++;
+       document.querySelector('#mistakes').textContent=mistakes;
+       message.textContent=`길을 잘못 안내했어요! 3초 후 다시 선택`;
+       message.className='message bad';
+       let sec=3;
+       const it=setInterval(()=>{
+         sec--;
+         if(sec>0)message.textContent=`길을 잘못 안내했어요! ${sec}초 후 다시 선택`;
+         else{
+           clearInterval(it);message.textContent='다시 골라보세요!';
+           document.querySelectorAll('.choice').forEach(x=>x.disabled=false);
+         }
+       },1000);
+     }
+   };
+ });
+}
+function finishGame(){
+ carMarker.setLatLng(routeCoords[routeCoords.length-1]);
+ if(horrorStage>=3){flashStatic();horrorMessage('목적지에 도착했습니다.');}
+ document.querySelector('#bar').style.width='100%';
+ const bonus=Math.max(0,300-mistakes*50);
+ score+=bonus;document.querySelector('#score').textContent=score;
+ document.querySelector('#finalScore').textContent=score+'점';
+ document.querySelector('#finalText').innerHTML=`오늘도 아빠가 무사히 집에 도착했습니다. ❤️<br><br>안내 실수 ${mistakes}회 · 도착 보너스 ${bonus}점<br><br><span style='color:#ffb0b0;font-size:12px'>※ 마지막까지 실제 지도 경로를 믿으세요.</span>`;
+ document.querySelector('#endModal').classList.remove('hidden');
+ document.querySelector('#playBtn').disabled=false;
+ try{
+   localStorage.setItem('father_game_complete',String(Date.now()));
+ }catch(error){
+   console.warn('아버지 퇴근길 게임 완료 저장 실패',error);
+ }
+ if(window.opener&&!window.opener.closed){
+   window.opener.postMessage({type:'father-game-complete'},'*');
+   setTimeout(()=>window.close(),2600);
+ }else{
+   setTimeout(()=>{window.location.href='index.html'},2600);
+ }
+}
+document.querySelector('#restart').onclick=()=>{
+ document.querySelector('#endModal').classList.add('hidden');
+ navbox.classList.remove('show');message.textContent='';
+ statusEl.textContent='같은 경로로 다시 하거나 출발지와 집을 새로 설정할 수 있습니다.';
+};
+</script>
+</body>
+</html>

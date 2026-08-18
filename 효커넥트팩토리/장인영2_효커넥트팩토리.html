@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>진짜 엄마를 찾아라!</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #fcf9f2;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: #5d4037;
+        }
+
+        p.description {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+
+        .image-container {
+            max-width: 900px;
+            width: 100%;
+            margin-bottom: 20px;
+            border: 5px solid #d7ccc8;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .image-container img {
+            width: 100%;
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        button {
+            font-size: 1.2em;
+            padding: 10px 25px;
+            cursor: pointer;
+            background-color: #8d6e63;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #6d4c41;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        #result-message {
+            font-size: 1.3em;
+            font-weight: bold;
+            min-height: 40px;
+            line-height: 1.6;
+        }
+        
+        .correct {
+            color: #2e7d32;
+        }
+        
+        .wrong {
+            color: #c62828;
+        }
+
+        /* 비밀번호 단서를 강조하는 스타일 */
+        .password-clue {
+            display: block;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #ffe082;
+            color: #d84315;
+            border-radius: 8px;
+            font-size: 1.2em;
+            border: 2px dashed #d84315;
+        }
+        
+        .password-letter {
+            font-size: 2em;
+            font-weight: 900;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>진짜 엄마를 찾아라!</h1>
+    <p class="description">여섯 명의 모습 중, 진짜 우리 어머니는 몇 번일까요?<br>가장 기억에 남는 모습을 선택해 보세요.</p>
+
+    <div class="image-container">
+        <img src="moms.jpg" alt="여섯 명의 어머니 모습">
+    </div>
+
+    <div class="button-group">
+        <button onclick="checkAnswer(1)">1번</button>
+        <button onclick="checkAnswer(2)">2번</button>
+        <button onclick="checkAnswer(3)">3번</button>
+        <button onclick="checkAnswer(4)">4번</button>
+        <button onclick="checkAnswer(5)">5번</button>
+        <button onclick="checkAnswer(6)">6번</button>
+    </div>
+
+    <div id="result-message"></div>
+
+    <script>
+        function checkAnswer(selectedNumber) {
+            const resultElement = document.getElementById('result-message');
+            
+            // 클래스를 초기화합니다.
+            resultElement.className = '';
+
+            if (selectedNumber === 1) {
+                // 1번을 선택했을 때 (정답 + 비밀번호 O 등장)
+                resultElement.innerHTML = `
+                    정답입니다! 어머니가 늘 하시던 편안한 차림이네요.
+                    <span class="password-clue">
+                        비밀번호 단서 획득: <span class="password-letter">O</span><br>
+                        <span style="font-size: 0.8em; color: #555;">(다음 방을 열기 위해 이 알파벳을 꼭 기억하세요!)</span>
+                    </span>
+                `;
+                resultElement.classList.add('correct');
+            } else {
+                // 2~6번을 선택했을 때 (오답)
+                resultElement.innerHTML = `앗, 아닙니다. ${selectedNumber}번은 다른 분 같네요. 다시 한번 자세히 살펴보세요!`;
+                resultElement.classList.add('wrong');
+            }
+        }
+    </script>
+
+</body>
+</html>

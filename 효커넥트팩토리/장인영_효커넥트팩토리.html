@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>빈칸 찾기 게임</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            background-color: #fff0f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        h1 {
+            color: #ff69b4;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #444;
+            word-break: keep-all;
+        }
+        input[type="text"] {
+            width: 60px;
+            height: 60px;
+            font-size: 30px;
+            text-align: center;
+            text-transform: uppercase;
+            margin: 20px 0;
+            border: 3px solid #ffb6c1;
+            border-radius: 10px;
+            outline: none;
+            font-weight: bold;
+            color: #ff1493;
+        }
+        input[type="text"]:focus {
+            border-color: #ff69b4;
+        }
+        button {
+            background-color: #ff69b4;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ff1493;
+        }
+        #message {
+            margin-top: 25px;
+            font-weight: bold;
+            font-size: 20px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>🔍 빈칸 찾기 게임</h1>
+        <p>부모님과 함께 활짝 웃으며 가족사진을 찍을 때,<br>
+        손가락 두 개(검지와 중지)를 펴서<br>가장 많이 만드는 <strong>영어 대문자</strong> 모양은 무엇일까요?</p>
+
+        <input type="text" id="answer" maxlength="1" placeholder="?">
+        <br>
+        <button onclick="checkAnswer()">정답 확인</button>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answer').value.toUpperCase();
+            const messageElement = document.getElementById('message');
+
+            if (userAnswer === "") {
+                messageElement.style.color = '#ff8c00';
+                messageElement.innerHTML = '빈칸을 채워주세요! 🧐';
+                return;
+            }
+
+            if (userAnswer === 'V') {
+                messageElement.style.color = '#32cd32';
+                messageElement.innerHTML = '🎉 정답입니다! 🎉<br><br>다음 단계를 위해 비밀번호 <strong>[ V ]</strong>를 꼭 기억해 주세요! 🗝️';
+            } else {
+                messageElement.style.color = '#ff0000';
+                messageElement.innerHTML = '아쉽지만 틀렸어요.<br>다시 한번 잘 생각해 보세요! 🤔';
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<title>기억의 방 · 3D</title>
+<style>
+:root{--glass:rgba(20,24,30,.58);--line:rgba(255,255,255,.22)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0d1117;font-family:system-ui,"Noto Sans KR",sans-serif}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#ui{position:fixed;inset:0;pointer-events:none;color:#fff}
+.top{display:flex;justify-content:space-between;gap:10px;padding:max(14px,env(safe-area-inset-top)) 14px 0}
+.pill{pointer-events:auto;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:999px;padding:10px 14px;font-weight:800;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+#hint{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,600px);text-align:center;background:var(--glass);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:18px;padding:12px 16px;font-weight:700}
+#crosshair{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);opacity:.8}
+#crosshair:before,#crosshair:after{content:"";position:absolute;background:#fff;border-radius:2px;box-shadow:0 0 8px #000}
+#crosshair:before{left:10px;top:1px;width:2px;height:20px}
+#crosshair:after{left:1px;top:10px;width:20px;height:2px}
+#intro,#game,#ending{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 30%,rgba(95,56,44,.65),rgba(8,10,14,.96));z-index:20}
+#intro.show,#game.show,#ending.show{display:flex}
+.card{width:min(94vw,720px);max-height:92dvh;overflow:auto;background:rgba(255,255,255,.94);color:#2a2522;border-radius:28px;padding:24px;box-shadow:0 30px 100px rgba(0,0,0,.5)}
+h1,h2{margin:0 0 16px}.dialog{font-size:clamp(20px,5vw,30px);line-height:1.55;min-height:140px;display:flex;align-items:center;justify-content:center;text-align:center}
+.btn{width:100%;border:0;border-radius:16px;padding:15px 18px;font:inherit;font-weight:900;background:#76503f;color:#fff}
+.answers{display:grid;gap:12px}
+.answer{border:0;border-radius:15px;padding:15px;text-align:left;font:inherit;font-weight:800;background:#e8edf3}
+.answer.wrong{background:#f6caca;animation:shake .35s}.answer.correct{background:#bee6c8}
+@keyframes shake{25%,75%{transform:translateX(-8px)}50%{transform:translateX(8px)}}
+#feedback{min-height:28px;text-align:center;font-weight:900;margin:12px 0}
+#doorFlash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:30}
+#doorFlash.slam{animation:slamFlash .55s}
+@keyframes slamFlash{0%,100%{opacity:0}25%{opacity:.9}35%{opacity:.05}45%{opacity:.55}}
+.small{opacity:.7;font-size:14px}
+@media(max-width:680px){#crosshair{display:none}.pill{font-size:14px;padding:9px 12px}}
+
+#thought{
+  position:fixed;left:50%;top:14%;transform:translateX(-50%);
+  z-index:18;display:none;max-width:min(86vw,560px);
+  background:rgba(255,255,255,.95);color:#2b2522;
+  border-radius:24px;padding:16px 20px;font-size:clamp(19px,4.8vw,28px);
+  font-weight:850;line-height:1.5;text-align:center;
+  box-shadow:0 18px 50px rgba(0,0,0,.35);pointer-events:none
+}
+#thought:after{
+  content:"";position:absolute;left:50%;bottom:-18px;transform:translateX(-50%);
+  border:10px solid transparent;border-top-color:rgba(255,255,255,.95)
+}
+#modeLabel{
+  position:fixed;left:50%;top:max(72px,calc(env(safe-area-inset-top) + 58px));
+  transform:translateX(-50%);z-index:18;display:none;
+  background:rgba(0,0,0,.48);color:#fff;border-radius:999px;
+  padding:9px 14px;font-weight:800;font-size:14px
+}
+
+</style>
+</head>
+<body>
+<div id="three"></div>
+
+<div id="ui">
+  <div class="top">
+    <div class="pill">기억의 방 · 3D</div>
+    <div class="pill"><span id="count">0</span> / 4</div>
+  </div>
+  <div id="crosshair"></div>
+  <div id="hint">화면을 드래그해 둘러본 뒤, 방 안의 캐릭터를 눌러보세요. 캐릭터의 생각이 이어집니다.</div>
+</div>
+
+<section id="intro" class="show">
+  <div class="card">
+    <h1>기억의 방</h1>
+    <div id="dialog" class="dialog">엄마: “오늘도 방 정리 안 했지? 계속 이렇게 할 거야?”</div>
+    <button id="introBtn" class="btn">다음</button>
+  </div>
+</section>
+
+<section id="game">
+  <div class="card">
+    <h2 id="gameTitle"></h2>
+    <p id="question" style="font-size:21px;font-weight:850;line-height:1.55"></p>
+    <div id="answers" class="answers"></div>
+    <div id="feedback"></div>
+    <button id="backBtn" class="btn" style="display:none">방으로 돌아가기</button>
+  </div>
+</section>
+
+<section id="ending">
+  <div class="card" style="text-align:center">
+    <h1>방 안에 색이 돌아왔어요</h1>
+    <p style="font-size:20px;line-height:1.6">회색이었던 사진들이 다시 따뜻한 기억으로 빛납니다.</p>
+    <button id="restart" class="btn">처음부터 다시 시작</button>
+    <p class="small">진행 상황은 브라우저에 저장됩니다.</p>
+  </div>
+</section>
+
+<div id="thought"></div><div id="modeLabel">1인칭 시점</div><div id="loadError" style="display:none;position:fixed;inset:0;z-index:99;background:#15191f;color:white;align-items:center;justify-content:center;text-align:center;padding:24px;font:700 18px/1.6 system-ui"></div><div id="doorFlash"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+
+const mount=document.querySelector("#three");
+const intro=document.querySelector("#intro");
+const dialog=document.querySelector("#dialog");
+const introBtn=document.querySelector("#introBtn");
+const lines=[
+'엄마: “오늘도 방 정리 안 했지? 계속 이렇게 할 거야?”',
+'나: “엄마는 맨날 잔소리만 해! 내 마음은 하나도 모르잖아!”',
+'엄마: “그렇게 말하고 방문을 닫아버리면 엄마도 속상해.”',
+'쾅!'
+];
+let li=0;
+introBtn.addEventListener("click",()=>{
+  li++;
+  if(li < lines.length){
+    dialog.textContent=lines[li];
+    if(li===lines.length-1){
+      document.querySelector("#doorFlash").classList.add("slam");
+      introBtn.textContent="방 안을 둘러보기";
+    }
+  }else{
+    intro.classList.remove("show");
+  }
+});
+
+if(typeof THREE==="undefined"){
+  const err=document.querySelector("#loadError");
+  err.style.display="flex";
+  err.innerHTML="3D 엔진을 불러오지 못했습니다.<br>인터넷 연결 후 Chrome 또는 Edge에서 다시 열어주세요.";
+  throw new Error("Three.js failed to load");
+}
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+mount.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+let firstPerson=false;
+let characterSelected=false;
+let isLying=false;
+const thought=document.querySelector("#thought");
+const modeLabel=document.querySelector("#modeLabel");
+scene.background=new THREE.Color(0x6f7d8e);
+scene.fog=new THREE.Fog(0x6f7d8e,13,27);
+
+const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,100);
+camera.position.set(0,2.15,6.7);
+
+const controls = THREE.OrbitControls
+  ? new THREE.OrbitControls(camera,renderer.domElement)
+  : {
+      enableDamping:false,
+      update(){},
+      target:new THREE.Vector3(0,1.55,0)
+    };
+if(THREE.OrbitControls){
+  controls.enableDamping=true;
+  controls.enablePan=false;
+  controls.minDistance=3.7;
+  controls.maxDistance=8;
+  controls.minPolarAngle=Math.PI*.28;
+  controls.maxPolarAngle=Math.PI*.56;
+  controls.target.set(0,1.55,0);
+  controls.rotateSpeed=.55;
+  controls.zoomSpeed=.75;
+} else {
+  camera.lookAt(0,1.55,0);
+}
+
+scene.add(new THREE.HemisphereLight(0xc9ddff,0x4d3427,1.65));
+const sun=new THREE.DirectionalLight(0xffe2b1,2.2);
+sun.position.set(-3,6,4);sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-9;sun.shadow.camera.right=9;sun.shadow.camera.top=8;sun.shadow.camera.bottom=-8;
+scene.add(sun);
+
+function mat(color,rough=.8,metal=0){return new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal})}
+function box(name,size,pos,color,opts={}){
+ const m=new THREE.Mesh(new THREE.BoxGeometry(...size),opts.material||mat(color,opts.rough??.8,opts.metal??0));
+ m.name=name;m.position.set(...pos);m.castShadow=opts.cast!==false;m.receiveShadow=true;scene.add(m);return m;
+}
+function cyl(name,r,h,pos,color){
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,32),mat(color));
+ m.name=name;m.position.set(...pos);m.castShadow=true;m.receiveShadow=true;scene.add(m);return m;
+}
+
+/* room shell */
+box("floor",[10,.18,8],[0,-.08,0],0x8b5c3c);
+box("backWall",[10,5,.18],[0,2.5,-4],0xd8ccb9,{cast:false});
+box("leftWall",[.18,5,8],[-5,2.5,0],0xc9baa5,{cast:false});
+box("rightWall",[.18,5,8],[5,2.5,0],0xc9baa5,{cast:false});
+box("ceiling",[10,.15,8],[0,5,0],0xeee9df,{cast:false});
+
+/* rug */
+const rug=new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.1,.035,64),mat(0x9e6b63));
+rug.scale.z=.65;rug.position.set(.1,.03,1.05);rug.receiveShadow=true;scene.add(rug);
+
+/* window */
+box("windowFrame",[2.7,2.45,.14],[-2.95,3.05,-3.84],0xf3eee5);
+const glass=new THREE.Mesh(new THREE.PlaneGeometry(2.35,2.08),new THREE.MeshPhysicalMaterial({color:0x9ed7f0,transmission:.45,transparent:true,opacity:.75,roughness:.18}));
+glass.position.set(-2.95,3.05,-3.74);scene.add(glass);
+box("windowV",[.09,2.15,.12],[-2.95,3.05,-3.65],0xf7f2e8);
+box("windowH",[2.4,.09,.12],[-2.95,3.05,-3.65],0xf7f2e8);
+box("curtainL",[.58,2.75,.32],[-4.15,3.0,-3.55],0x9aaec6);
+box("curtainR",[.58,2.75,.32],[-1.75,3.0,-3.55],0x9aaec6);
+
+/* bed */
+box("bedBase",[3.7,.55,2.2],[-2.55,.45,1.25],0x72503b);
+box("mattress",[3.55,.34,2.08],[-2.55,.9,1.25],0xf3efe8);
+box("blanket",[2.2,.18,2.1],[-1.88,1.13,1.25],0x6f8eaa);
+box("pillow",[1.05,.22,.68],[-3.62,1.18,1.25],0xfaf8f3);
+
+/* desk + chair */
+box("deskTop",[2.6,.18,1.15],[3.15,1.35,1.05],0x845738);
+for(const x of [2.08,4.22]) for(const z of [.65,1.45]) box("deskLeg",[.16,1.3,.16],[x,.65,z],0x60402b);
+box("chairSeat",[1.0,.17,1.0],[2.4,.72,2.2],0x6e4932);
+box("chairBack",[1.0,1.25,.16],[2.4,1.35,2.62],0x6e4932);
+for(const x of [2.0,2.8]) for(const z of [1.83,2.55]) box("chairLeg",[.12,.75,.12],[x,.35,z],0x5b3b29);
+
+/* vanity */
+box("vanity",[1.8,.95,.72],[.55,.52,2.55],0xa87552);
+box("vanityTop",[2.0,.16,.9],[.55,1.06,2.55],0x946244);
+const mirrorFrame=new THREE.Mesh(new THREE.TorusGeometry(.68,.09,16,48),mat(0x8b5a3a));
+mirrorFrame.position.set(.55,2.08,2.62);mirrorFrame.rotation.x=Math.PI/2;scene.add(mirrorFrame);
+const mirror=new THREE.Mesh(new THREE.CircleGeometry(.59,48),new THREE.MeshPhysicalMaterial({color:0xa9c8da,metalness:.25,roughness:.12}));
+mirror.position.set(.55,2.08,2.61);mirror.rotation.x=Math.PI/2;scene.add(mirror);
+
+/* lamp */
+cyl("lampStem",.07,1.0,[3.75,2.0,1.0],0x5d514c);
+const shade=new THREE.Mesh(new THREE.ConeGeometry(.48,.55,32,1,true),new THREE.MeshStandardMaterial({color:0xf3c56b,side:THREE.DoubleSide}));
+shade.position.set(3.75,2.62,1.0);shade.rotation.x=Math.PI;shade.castShadow=true;scene.add(shade);
+const lampLight=new THREE.PointLight(0xffc76a,1.6,5);lampLight.position.set(3.75,2.45,1);scene.add(lampLight);
+
+/* door */
+box("door",[1.8,3.8,.2],[3.75,1.9,-3.82],0x6d4430);
+cyl("knob",.1,.18,[3.05,1.9,-3.57],0xc79b49).rotation.x=Math.PI/2;
+
+
+/* simple 3D character — compatible with Three.js r128 */
+const character = new THREE.Group();
+character.position.set(0.1,0,1.2);
+
+const skin=mat(0xe0a47e), hair=mat(0x2c211c), shirt=mat(0x6f86a8), pants=mat(0x3d4658);
+const body=new THREE.Mesh(new THREE.CylinderGeometry(.34,.42,1.05,24),shirt);
+body.position.y=1.35;body.castShadow=true;character.add(body);
+
+const neck=new THREE.Mesh(new THREE.CylinderGeometry(.11,.11,.18,16),skin);
+neck.position.y=1.94;neck.castShadow=true;character.add(neck);
+
+const head=new THREE.Mesh(new THREE.SphereGeometry(.34,32,24),skin);
+head.position.y=2.25;head.castShadow=true;character.add(head);
+
+const hairCap=new THREE.Mesh(
+  new THREE.SphereGeometry(.36,32,16,0,Math.PI*2,0,Math.PI*.52),
+  hair
+);
+hairCap.position.y=2.38;hairCap.castShadow=true;character.add(hairCap);
+
+for(const x of [-.46,.46]){
+  const arm=new THREE.Mesh(new THREE.CylinderGeometry(.10,.12,.82,18),skin);
+  arm.position.set(x,1.42,0);
+  arm.rotation.z=x<0?-.16:.16;
+  arm.castShadow=true;
+  character.add(arm);
+  const hand=new THREE.Mesh(new THREE.SphereGeometry(.12,18,14),skin);
+  hand.position.set(x<0?-.53:.53,1.02,0);
+  hand.castShadow=true;
+  character.add(hand);
+}
+
+for(const x of [-.18,.18]){
+  const leg=new THREE.Mesh(new THREE.CylinderGeometry(.12,.14,.92,18),pants);
+  leg.position.set(x,.48,0);
+  leg.castShadow=true;
+  character.add(leg);
+  const shoe=new THREE.Mesh(new THREE.BoxGeometry(.28,.16,.48),mat(0x2b2b31));
+  shoe.position.set(x,.03,.08);
+  shoe.castShadow=true;
+  character.add(shoe);
+}
+
+const selectRing=new THREE.Mesh(
+  new THREE.TorusGeometry(.62,.045,12,48),
+  new THREE.MeshBasicMaterial({color:0xffe58a})
+);
+selectRing.rotation.x=Math.PI/2;
+selectRing.position.y=.05;
+character.add(selectRing);
+
+character.userData.isCharacter=true;
+character.traverse(obj=>{obj.userData.characterRoot=true;});
+scene.add(character);
+
+/* simple framed family photos, clickable */
+const photoMeshes=[];
+const photoColors=[0xe29a7c,0x80abc5,0xc29bca,0xd8b06b];
+const photoPositions=[[-1.15,3.5,-3.72],[.3,3.25,-3.72],[1.7,3.55,-3.72],[2.75,3.05,-3.72]];
+const done=JSON.parse(localStorage.getItem("memory3dDone")||"[false,false,false,false]");
+
+function makePhoto(i){
+ const group=new THREE.Group();group.position.set(...photoPositions[i]);
+ const frame=new THREE.Mesh(new THREE.BoxGeometry(1.05,.82,.12),mat(0x5e3d2b));frame.castShadow=true;group.add(frame);
+ const picMat=new THREE.MeshStandardMaterial({color:done[i]?photoColors[i]:0x6e6e6e,roughness:.75});
+ const pic=new THREE.Mesh(new THREE.PlaneGeometry(.84,.62),picMat);pic.position.z=.071;pic.userData.photoIndex=i;group.add(pic);
+ scene.add(group);photoMeshes.push(pic);
+}
+for(let i=0;i<4;i++)makePhoto(i);
+
+
+
+/* decorations */
+for(let i=0;i<8;i++){
+ const book=box("book",[.45,.08,.65],[2.25+i*.17,1.53,1.0],0x754b44);
+ book.rotation.y=(i%2?-.06:.05);
+}
+cyl("plantPot",.28,.38,[.8,1.35,2.5],0xb27250);
+for(let i=0;i<7;i++){
+ const stem=cyl("plantStem",.025,.7,[.8+(i-3)*.07,1.83,2.5],0x4e7f4e);
+ stem.rotation.z=(i-3)*.12;
+}
+
+
+/* games */
+const gameEl=document.querySelector("#game"),titleEl=document.querySelector("#gameTitle"),qEl=document.querySelector("#question"),answersEl=document.querySelector("#answers"),feedback=document.querySelector("#feedback"),backBtn=document.querySelector("#backBtn");
+const games=[
+ {t:"함께한 식탁",q:"엄마가 휴대폰을 내려놓고 가족과 이야기하자고 한 진짜 마음은?",a:["휴대폰이 싫어서","가족과 함께하는 시간을 소중히 여기길 바라서","나를 혼내고 싶어서"],c:1},
+ {t:"우산 속의 마음",q:"비 오는 날 엄마가 우산을 들고 마중 나온 까닭은?",a:["비를 좋아해서","내가 안전하고 따뜻하게 돌아오길 바라서","우산을 자랑하려고"],c:1},
+ {t:"할머니의 전화",q:"엄마가 할머니께 안부 전화를 드리자고 한 마음은?",a:["통화 시간이 남아서","가족을 기억하고 서로 챙기길 바라서","심심해서"],c:1},
+ {t:"가족 여행의 약속",q:"가족이 함께 여행하며 가장 소중하게 지켜야 할 것은?",a:["사진을 많이 찍는 것","서로 기다리고 배려하는 것","비싼 선물을 사는 것"],c:1}
+];
+let active=-1;
+function openGame(i){
+ active=i;const g=games[i];gameEl.classList.add("show");titleEl.textContent=g.t;qEl.textContent=g.q;feedback.textContent="";backBtn.style.display="none";answersEl.innerHTML="";
+ g.a.forEach((x,j)=>{
+  const b=document.createElement("button");b.className="answer";b.textContent=x;
+  b.onclick=()=>{
+   if(j===g.c){b.classList.add("correct");feedback.textContent="정답입니다. 사진에 색이 돌아왔어요!";[...answersEl.children].forEach(v=>v.disabled=true);done[i]=true;photoMeshes[i].material.color.setHex(photoColors[i]);localStorage.setItem("memory3dDone",JSON.stringify(done));backBtn.style.display="block";updateCount();}
+   else{b.classList.remove("wrong");void b.offsetWidth;b.classList.add("wrong");feedback.textContent="다시 생각해 보세요."}
+  };answersEl.appendChild(b);
+ });
+}
+backBtn.onclick=()=>gameEl.classList.remove("show");
+
+/* click / touch raycast */
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+renderer.domElement.addEventListener("pointerup",e=>{
+ if(intro.classList.contains("show")||gameEl.classList.contains("show"))return;
+ const r=renderer.domElement.getBoundingClientRect();
+ pointer.x=((e.clientX-r.left)/r.width)*2-1;pointer.y=-((e.clientY-r.top)/r.height)*2+1;
+ raycaster.setFromCamera(pointer,camera);
+
+ if(!characterSelected){
+   const ch=raycaster.intersectObject(character,true)[0];
+   if(ch){enterFirstPerson();return;}
+ }
+
+ const photoHit=raycaster.intersectObjects(photoMeshes,false)[0];
+ if(photoHit && !isLying) openGame(photoHit.object.userData.photoIndex);
+});
+
+
+function say(text,duration=2300){
+ thought.textContent=text;thought.style.display="block";
+ clearTimeout(say._t);say._t=setTimeout(()=>thought.style.display="none",duration);
+}
+function enterFirstPerson(){
+ characterSelected=true;firstPerson=true;
+ character.visible=false;modeLabel.style.display="block";
+ controls.enabled=false;
+ const start=camera.position.clone(), end=new THREE.Vector3(.1,1.65,1.25);
+ const startTarget=controls.target.clone(), endTarget=new THREE.Vector3(-2.4,1.1,1.2);
+ let t=0;
+ function step(){
+   t=Math.min(1,t+.035);
+   camera.position.lerpVectors(start,end,t);
+   controls.target.lerpVectors(startTarget,endTarget,t);
+   camera.lookAt(controls.target);
+   if(t<1)requestAnimationFrame(step);
+   else{
+     say("오늘은 짜증나는 날이야. 아무것도 하기 싫다. 누워 자자.",3000);
+     setTimeout(lieDown,3300);
+   }
+ } step();
+}
+function lieDown(){
+ isLying=true;
+ const startPos=camera.position.clone(), endPos=new THREE.Vector3(-2.55,1.55,1.25);
+ const lookStart=controls.target.clone(), lookEnd=new THREE.Vector3(-2.3,2.0,-1.2);
+ let t=0;
+ function step(){
+   t=Math.min(1,t+.028);
+   camera.position.lerpVectors(startPos,endPos,t);
+   controls.target.lerpVectors(lookStart,lookEnd,t);
+   camera.lookAt(controls.target);
+   if(t<1){
+     requestAnimationFrame(step);
+   }else{
+     say("조금 쉬고 나면 마음이 괜찮아질지도 몰라.",2200);
+     setTimeout(()=>{ if(!gameEl.classList.contains("show")) openGame(0); },2300);
+   }
+ }
+ step();
+}
+
+/* progress */
+const ending=document.querySelector("#ending");
+function updateCount(){
+ const n=done.filter(Boolean).length;document.querySelector("#count").textContent=n;
+ if(n===4)setTimeout(()=>ending.classList.add("show"),700);
+}
+updateCount();
+document.querySelector("#restart").onclick=()=>{localStorage.removeItem("memory3dDone");location.reload()};
+
+/* resize & render */
+addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+function animate(){requestAnimationFrame(animate);if(controls.enabled!==false)controls.update();renderer.render(scene,camera)}
+try{
+  animate();
+}catch(error){
+  console.error(error);
+  const err=document.querySelector("#loadError");
+  err.style.display="flex";
+  err.textContent="3D 방을 불러오는 중 오류가 발생했습니다: "+error.message;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>현관 미니게임</title>
+  <style>
+    body { margin: 0; min-height: 100vh; overflow:hidden; display: grid; place-items: center; background: #20242b; color: #fff; font-family: "Malgun Gothic", sans-serif; }
+    main { width: min(720px, calc(100vw - 32px)); padding: 32px; border: 3px solid #fff; border-radius: 8px; background: #625848; text-align: center; }
+    h1 { margin: 0 0 12px; }
+    p { line-height: 1.6; }
+    button { padding: 10px 16px; border: 0; border-radius: 6px; background: #ffd966; font-weight: 700; cursor: pointer; }
+    @media (orientation:landscape) and (max-height:600px){main{width:min(720px,92vw);max-height:92dvh;overflow:hidden;padding:14px}h1{font-size:22px}p{margin:8px 0;line-height:1.35}}
+  </style>
+</head>
+<body>
+  <main>
+    <h1>현관</h1>
+    <p>가족사진 포즈 맞추기와 레이싱 게임 연결 화면입니다.</p>
+    <button onclick="window.close(); history.back();">돌아가기</button>
+  </main>
+</body>
+</html>

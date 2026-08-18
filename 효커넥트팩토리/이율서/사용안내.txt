@@ -1,0 +1,7 @@
+실행 방법
+
+1. index.html, memory_background.png, moms.jpg를 같은 폴더에 둡니다.
+2. index.html을 실행합니다.
+3. moms.jpg는 여섯 명의 후보 사진이 들어 있는 게임용 이미지입니다.
+
+현재 첨부된 배경 이미지는 memory_background.png로 포함되어 있습니다.

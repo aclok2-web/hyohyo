@@ -9,8 +9,8 @@
   };
   const SPRITE_WIDTH = 36;
   const SPRITE_HEIGHT = 48;
-  const DISPLAY_WIDTH = 36;
-  const DISPLAY_HEIGHT = 48;
+  const DISPLAY_WIDTH = 42;
+  const DISPLAY_HEIGHT = 56;
   const FRAME_SEQUENCE = [0, 1, 2, 1];
   const DIRECTION_ROW = {
     down: 0,

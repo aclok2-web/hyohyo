@@ -565,7 +565,7 @@ button:disabled {
 .mobile-controls {
   position: absolute;
   inset: 0;
-  z-index: 45;
+  z-index: 24;
   display: none;
   pointer-events: none;
   touch-action: none;

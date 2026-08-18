@@ -90,15 +90,24 @@ body::before {
 }
 
 #momCallSequence {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 2147483647;
   display: none;
+  width: 100dvw;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000;
+  place-items: center;
+  overscroll-behavior: none;
+}
+
+#momCallSequence.show { display: grid; }
+
+body.mom-call-active {
   overflow: hidden;
   background: #000;
 }
-
-#momCallSequence.show { display: block; }
 
 #momMissingText {
   position: absolute;
@@ -118,10 +127,11 @@ body::before {
 #momMissingText.hide { opacity: 0; pointer-events: none; }
 
 #momCallScreen {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  position: relative;
+  width: min(100dvw, calc(100dvh * 0.46));
+  height: 100dvh;
+  max-width: 100dvw;
+  max-height: 100dvh;
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -135,6 +145,13 @@ body::before {
   display: block;
   object-fit: contain;
   background: #000;
+}
+
+@media (orientation: portrait) {
+  #momCallScreen {
+    width: 100dvw;
+    height: 100dvh;
+  }
 }
 
 #momCallHint {

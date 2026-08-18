@@ -105,6 +105,9 @@
         momCallScreen: document.getElementById("momCallScreen"),
         momCallImage: document.getElementById("momCallImage"),
       };
+      if (this.dom.momCallSequence && this.dom.momCallSequence.parentElement !== document.body) {
+        document.body.appendChild(this.dom.momCallSequence);
+      }
 
       this.assets = this.loadAssets();
       this.bindEvents();
@@ -540,6 +543,7 @@
       if (this.momCallRunning || !this.dom.momCallSequence) return;
       this.momCallRunning = true;
       this.paused = true;
+      document.body.classList.add("mom-call-active");
       this.dom.momCallImage.src = "ChatGPT Image 2026년 8월 18일 오전 10_26_40.png";
       this.dom.momMissingText.classList.remove("hide");
       this.dom.momCallSequence.classList.remove("call-connected");
@@ -606,6 +610,7 @@
       this.setMomCallRinging(false);
       this.dom.momCallSequence.classList.remove("show", "call-connected", "ringing");
       this.dom.momCallSequence.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("mom-call-active");
       this.momCallRunning = false;
       this.momCallAnswered = false;
       this.paused = false;

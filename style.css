@@ -250,6 +250,10 @@ body::before {
   right: 42px;
   bottom: 28px;
   z-index: 30;
+  pointer-events: auto;
+  touch-action: manipulation;
+  user-select: none;
+  cursor: pointer;
   min-height: 136px;
   padding: 18px 22px 26px;
   color: var(--paper);

@@ -213,20 +213,11 @@
       joystick.addEventListener("pointercancel", reset);
       window.addEventListener("blur", reset);
 
-      action.addEventListener("pointerdown", (event) => {
+      action.addEventListener("click", (event) => {
         event.preventDefault();
         if (this.dialog.active) this.dialog.advance();
         else if (this.started && !this.paused) this.interact();
       });
-
-      const dialogBox = document.getElementById("dialogBox");
-      if (dialogBox) {
-        dialogBox.addEventListener("pointerdown", (event) => {
-          if (!this.dialog.active) return;
-          event.preventDefault();
-          this.dialog.advance();
-        });
-      }
     }
 
     syncMiniGameCompletion() {

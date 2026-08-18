@@ -12,6 +12,13 @@
       this.index = 0;
       this.onClose = null;
       this.active = false;
+      this.box.setAttribute("role", "button");
+      this.box.setAttribute("aria-label", "대화 계속하기");
+      this.box.addEventListener("click", (event) => {
+        if (!this.active) return;
+        event.preventDefault();
+        this.advance();
+      });
       this.hide();
     }
 
@@ -27,7 +34,7 @@
 
     render() {
       this.text.textContent = this.lines[this.index] || "";
-      this.next.textContent = this.index < this.lines.length - 1 ? "ENTER 다음" : "ENTER 닫기";
+      this.next.textContent = this.index < this.lines.length - 1 ? "화면을 눌러 다음" : "화면을 눌러 닫기";
     }
 
     advance() {

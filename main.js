@@ -555,37 +555,33 @@
       this.setMomCallRinging(true);
     }
 
-    speak(text) {
+    speak(text, frightened = false) {
       return new Promise((resolve) => {
         if (!("speechSynthesis" in window)) { resolve(); return; }
         speechSynthesis.cancel();
         const line = new SpeechSynthesisUtterance(text);
         line.lang = "ko-KR";
-        line.rate = .92;
-        line.pitch = 1.08;
+        const koreanVoices = speechSynthesis.getVoices().filter((voice) => voice.lang && voice.lang.toLowerCase().startsWith("ko"));
+        const frightenedVoice = koreanVoices.find((voice) => /female|yuna|sora|heami|sunhi|여성/i.test(voice.name));
+        if (frightenedVoice || koreanVoices[0]) line.voice = frightenedVoice || koreanVoices[0];
+        line.rate = frightened ? .76 : .92;
+        line.pitch = frightened ? 1.22 : 1.08;
+        line.volume = frightened ? .92 : 1;
         line.onend = resolve;
         line.onerror = resolve;
         speechSynthesis.speak(line);
       });
     }
 
-    playScream(duration = 2000) {
+    playScream() {
       return new Promise((resolve) => {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) { setTimeout(resolve, duration); return; }
-        const context = new AudioContextClass();
-        const oscillator = context.createOscillator();
-        const gain = context.createGain();
-        oscillator.type = "sawtooth";
-        oscillator.frequency.setValueAtTime(760, context.currentTime);
-        oscillator.frequency.exponentialRampToValueAtTime(310, context.currentTime + duration / 1000);
-        gain.gain.setValueAtTime(.0001, context.currentTime);
-        gain.gain.exponentialRampToValueAtTime(.22, context.currentTime + .04);
-        gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + duration / 1000);
-        oscillator.connect(gain).connect(context.destination);
-        oscillator.start();
-        oscillator.stop(context.currentTime + duration / 1000);
-        oscillator.onended = () => { context.close(); resolve(); };
+        const scream = new Audio("assets/audio/mom_scream.mp3?v=1");
+        scream.preload = "auto";
+        scream.volume = .92;
+        scream.onended = resolve;
+        scream.onerror = resolve;
+        const playback = scream.play();
+        if (playback && typeof playback.catch === "function") playback.catch(resolve);
       });
     }
 
@@ -597,8 +593,8 @@
       this.dom.momCallImage.src = "ChatGPT Image 2026년 8월 18일 오전 09_15_20.png";
       await this.wait(3000);
       const child = this.playerCharacter === "girl" ? "딸" : "아들";
-      await this.speak(`${child}, 엄마 잠시만 다녀올게.`);
-      await this.playScream(2000);
+      await this.speak(`${child}아... 엄마... 잠시만 다녀올게.`, true);
+      await this.playScream();
       this.dom.momCallImage.src = "ChatGPT Image 2026년 8월 18일 오전 09_15_32.png";
       this.dom.momCallSequence.classList.add("ringing");
       this.vibrate(3000);

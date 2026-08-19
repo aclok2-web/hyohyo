@@ -562,11 +562,11 @@
         const line = new SpeechSynthesisUtterance(text);
         line.lang = "ko-KR";
         const koreanVoices = speechSynthesis.getVoices().filter((voice) => voice.lang && voice.lang.toLowerCase().startsWith("ko"));
-        const frightenedVoice = koreanVoices.find((voice) => /female|yuna|sora|heami|sunhi|여성/i.test(voice.name));
-        if (frightenedVoice || koreanVoices[0]) line.voice = frightenedVoice || koreanVoices[0];
-        line.rate = frightened ? .76 : .92;
-        line.pitch = frightened ? 1.22 : 1.08;
-        line.volume = frightened ? .92 : 1;
+        const adultFemaleVoice = koreanVoices.find((voice) => /heami|sunhi|sora|yuna|female|여성/i.test(voice.name));
+        if (adultFemaleVoice || koreanVoices[0]) line.voice = adultFemaleVoice || koreanVoices[0];
+        line.rate = frightened ? .82 : .92;
+        line.pitch = frightened ? .86 : 1.02;
+        line.volume = frightened ? .96 : 1;
         line.onend = resolve;
         line.onerror = resolve;
         speechSynthesis.speak(line);

@@ -25,11 +25,11 @@ body{display:grid;place-items:center}
 .speech{position:absolute;left:50%;top:5%;transform:translateX(-50%);z-index:15;background:#fffaf0;border:4px solid #76553c;border-radius:20px;padding:12px 18px;max-width:82%;font-weight:1000;text-align:center;box-shadow:0 7px 0 #b18d68}
 .top{position:absolute;left:12px;right:12px;top:12px;z-index:20;display:flex;justify-content:space-between;gap:8px}
 .pill{background:#0009;color:#fff;border:1px solid #ffffff33;border-radius:999px;padding:8px 12px;font-weight:900}
-.board{position:absolute;right:4%;top:25%;width:220px;background:#211a17;color:white;border:5px solid #ad875c;border-radius:18px;padding:14px;z-index:8;box-shadow:0 8px 0 #6d4d34}
+.board{display:none}
 .board h3{margin:0 0 8px;text-align:center;color:#ffd96a}.row{display:flex;justify-content:space-between;margin:6px 0}
 .judges{display:flex;justify-content:center;gap:16px;margin-top:9px}.light{width:26px;height:26px;border-radius:50%;background:#555;border:3px solid #aaa}.light.on{background:#71d97b;box-shadow:0 0 14px #71d97b}
 .panel{position:absolute;left:12px;right:12px;bottom:12px;z-index:21;background:#fff9ecf2;border:4px solid #805d42;border-radius:22px;padding:14px;box-shadow:0 8px 0 #b4926d}
-.meterLabel{display:flex;justify-content:space-between;font-weight:900}.meter{height:28px;background:#ddd0b9;border-radius:999px;overflow:hidden;border:3px solid #6d523d;margin-top:8px}
+.meterLabel{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:900}.targetGuide{padding:3px 9px;border-radius:999px;background:#5b321f;color:#fff;white-space:nowrap}.targetGuide b{color:#ffe05e;font-size:1.12em}.meter{height:28px;background:#ddd0b9;border-radius:999px;overflow:hidden;border:3px solid #6d523d;margin-top:8px}
 .fill{height:100%;width:0;background:linear-gradient(90deg,#6bbd72 0 55%,#f1d05f 55% 78%,#d85c4d 78% 100%);transition:.07s}
 .controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
 .btn{border:0;border-radius:16px;padding:15px 12px;font-size:20px;font-weight:1000;cursor:pointer}.tap{background:#efad42;color:#3b260a;box-shadow:0 6px 0 #a56a20}.liftBtn{background:#c84d3c;color:white;box-shadow:0 6px 0 #7d2c24}
@@ -40,7 +40,7 @@ body{display:grid;place-items:center}
 .hidden{display:none}.weightPop{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:30;font-size:70px;font-weight:1000;color:#ffe05e;text-shadow:0 5px 0 #71351f,0 0 25px #ff8c39;opacity:0}
 .weightPop.show{animation:pop .8s}@keyframes pop{0%{opacity:0;scale:.5}30%{opacity:1;scale:1.15}100%{opacity:0;scale:1}}
 @media(max-width:620px){.grandma{font-size:70px}.player{font-size:90px}.bags{font-size:58px}.board{width:185px;font-size:13px}.speech{font-size:14px;top:9%}.btn{font-size:17px}.panel{padding:11px}}
-@media (orientation:landscape) and (max-height:600px){#game{width:100vw;height:100dvh;max-height:none}.speech{top:3%;padding:7px 12px;font-size:12px}.grandma{height:44%;bottom:17%}.player{left:50%;bottom:31%;height:36%;width:min(260px,36vw)}.board{top:18%;width:170px;padding:7px;font-size:11px}.panel{left:8px;right:8px;bottom:6px;padding:6px 10px;border-width:2px;border-radius:12px;box-shadow:none}.meter{height:16px;margin-top:3px}.controls{margin-top:4px}.btn{padding:7px;font-size:13px}.status{min-height:18px;margin-top:3px;font-size:12px}.card{max-height:94dvh;overflow:hidden;padding:14px}.card p{font-size:14px;line-height:1.35}}
+@media (orientation:landscape) and (max-height:600px){#game{width:100vw;height:100dvh;max-height:none}.speech{top:3%;padding:7px 12px;font-size:12px}.grandma{height:40%;bottom:24%}.player{left:50%;bottom:40%;height:34%;width:min(240px,34vw)}.panel{left:8px;right:8px;bottom:calc(16px + env(safe-area-inset-bottom));padding:6px 10px 8px;border-width:2px;border-radius:12px;box-shadow:none}.meterLabel{font-size:12px}.targetGuide{padding:2px 7px}.meter{height:16px;margin-top:3px}.controls{margin-top:4px}.btn{padding:7px;font-size:13px}.status{min-height:18px;margin-top:3px;font-size:12px}.card{max-height:94dvh;overflow:hidden;padding:14px}.card p{font-size:14px;line-height:1.35}}
 </style>
 </head>
 <body>
@@ -52,7 +52,7 @@ body{display:grid;place-items:center}
  <div class="board"><h3>오늘의 장바구니 역도</h3><div class="row"><span>현재 중량</span><b><span id="weight">5</span>kg</b></div><div class="row"><span>개인 최고</span><b><span id="best">0</span>kg</b></div><div class="row"><span>도전 차수</span><b><span id="attempt">1</span>차</b></div><div class="judges"><div class="light" id="j1"></div><div class="light" id="j2"></div><div class="light" id="j3"></div></div></div>
  <div class="weightPop" id="pop"></div>
  <div class="panel">
-  <div class="meterLabel"><span>💪 힘 게이지</span><span id="powerTxt">0%</span></div>
+  <div class="meterLabel"><span>💪 힘 게이지 · 현재 <b id="powerTxt">0%</b></span><span class="targetGuide">🎯 목표 <b id="targetRange">53~70%</b></span></div>
   <div class="meter"><div class="fill" id="fill"></div></div>
   <div class="controls"><button class="btn tap" id="tapBtn">💥 연타해서 힘 모으기!</button><button class="btn liftBtn" id="liftBtn">🏋️ 들어 올리기!</button></div>
   <div class="status" id="status">연타해서 힘을 모은 뒤 적절한 순간에 들어 올리세요.</div>
@@ -79,10 +79,10 @@ function renderLifter(phase="ready"){
  c.drawImage(transparentLifterFrame(row,col),0,0,canvas.width,canvas.height);
 }
 lifterSheet.onload=()=>renderLifter("ready");
-function needRange(){const kg=levels[round].kg,center=Math.min(88,58+kg*.25);return{min:center-9,max:center+8}}
+function needRange(){const kg=levels[round].kg,center=Math.min(88,58+kg*.25);return{min:Math.round(center-9),max:Math.round(center+8)}}
 function updatePower(){power=Math.max(0,Math.min(100,power));$("#fill").style.width=power+"%";$("#powerTxt").textContent=Math.round(power)+"%";$("#player").classList.toggle("shake",power>20);renderLifter(power>=needRange().min*.55?"half":"ready")}
 function resetJudge(){["#j1","#j2","#j3"].forEach(id=>$(id).classList.remove("on"))}
-function render(){const lv=levels[round],r=needRange();$("#round").textContent=round+1;$("#weight").textContent=lv.kg;$("#bags").textContent=lv.bags;$("#attempt").textContent=attempt;$("#best").textContent=best;$("#speech").textContent=`👵 “${round===2?"마지막 쇼핑카트까지 들어보렴!":"이것 좀 들어줄 수 있겠니?"}”`;$("#status").textContent=`${lv.label} · ${lv.kg}kg 도전! 힘을 ${r.min}~${r.max}% 정도 모아보세요.`;power=0;updatePower();resetJudge();$("#player").className="player";$("#bags").className="bags";renderLifter("ready")}
+function render(){const lv=levels[round],r=needRange();$("#round").textContent=round+1;$("#weight").textContent=lv.kg;$("#bags").textContent=lv.bags;$("#attempt").textContent=attempt;$("#best").textContent=best;$("#targetRange").textContent=`${r.min}~${r.max}%`;$("#speech").textContent=`👵 “${round===2?"마지막 쇼핑카트까지 들어보렴!":"이것 좀 들어줄 수 있겠니?"}”`;$("#status").textContent=`${lv.label} · ${lv.kg}kg 도전! 힘을 ${r.min}~${r.max}% 정도 모아보세요.`;power=0;updatePower();resetJudge();$("#player").className="player";$("#bags").className="bags";renderLifter("ready")}
 function tap(){if(!running)return;power+=2.8+Math.random()*2.2;updatePower()}
 function lift(){if(!running)return;const lv=levels[round],r=needRange();$("#tapBtn").disabled=$("#liftBtn").disabled=true;if(power>=r.min&&power<=r.max)success(lv);else fail(power<r.min?"힘이 부족했어요!":"너무 힘을 줘서 균형을 잃었어요!")}
 function success(lv){running=false;clearInterval(decayTimer);$("#bags").classList.add("lift");$("#player").classList.remove("shake");renderLifter("full");const add=500+lv.kg*10;score+=add;best=Math.max(best,lv.kg);$("#score").textContent=score;$("#best").textContent=best;$("#status").textContent="성공! 장바구니 덤벨을 완전히 들었습니다!";$("#pop").textContent=`${lv.kg}kg 성공!`;$("#pop").classList.remove("show");void $("#pop").offsetWidth;$("#pop").classList.add("show");setTimeout(()=>$("#j1").classList.add("on"),250);setTimeout(()=>$("#j2").classList.add("on"),430);setTimeout(()=>$("#j3").classList.add("on"),610);if(navigator.vibrate)navigator.vibrate([80,50,120]);setTimeout(()=>{if(round<levels.length-1){round++;attempt=1;running=true;$("#tapBtn").disabled=$("#liftBtn").disabled=false;render();startDecay()}else finishGame()},1500)}

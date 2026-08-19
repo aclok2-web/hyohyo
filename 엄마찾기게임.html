@@ -172,7 +172,7 @@ function animateShuffle(duration,speed){
  } step();
 }
 function startShuffle(){
- info.textContent=round===1?"엄마들이 움직이기 시작합니다!":round===2?"이번엔 버스까지 지나갑니다!":"마지막 라운드! 속임수에 주의하세요!";
+ info.textContent=round===1?"엄마들이 움직이기 시작합니다!":round===2?"":"마지막 라운드! 속임수에 주의하세요!";
  animateShuffle(round===1?6000:round===2?7500:9000,round===1?850:round===2?620:480);
  if(round>=2) later(busPass,2800);
  if(round===3){

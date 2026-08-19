@@ -575,7 +575,7 @@
 
     playScream() {
       return new Promise((resolve) => {
-        const scream = new Audio("assets/audio/mom_scream.mp3?v=1");
+        const scream = new Audio("assets/audio/mom_scream.mp3?v=2");
         scream.preload = "auto";
         scream.volume = .92;
         scream.onended = resolve;

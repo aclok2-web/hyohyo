@@ -43,7 +43,7 @@ repeating-linear-gradient(0deg,transparent 0 4px,#ff2b2b08 4px 5px)}
 .card h1,.card h2{margin:0 0 12px}.card p{font-size:18px;line-height:1.65}.btn{border:0;border-radius:15px;padding:14px 24px;font-size:20px;font-weight:1000;background:#c75b39;color:white;cursor:pointer}.hidden{display:none}
 .small{font-size:13px;color:#755e50}
 @media(max-width:650px){.grandma{font-size:80px}.speech{max-width:88%;top:12%;font-size:14px}.specialBtn{width:92px;height:92px;font-size:15px;right:10px;bottom:22%}.pill{font-size:12px;padding:6px 9px}.shelf:before{font-size:30px;letter-spacing:9px}.window{width:140px;height:105px}}
-@media (orientation:landscape) and (max-height:600px){.hud{top:4px}.pill{padding:4px 7px;font-size:11px}.meterWrap{top:38px}.speech{top:10%;padding:6px 10px;font-size:12px}.grandma{height:44%;bottom:12%}.specialBtn{width:72px;height:72px;right:8px;bottom:18%;font-size:12px}.card{max-height:94dvh;overflow:hidden;padding:14px}.card p{font-size:14px;line-height:1.35}.btn{padding:9px 16px;font-size:16px}}
+@media (orientation:landscape) and (max-height:600px){#game{width:100vw;height:100dvh}.hud{top:6px;left:8px;right:8px}.pill{padding:5px 9px;font-size:13px}.meterWrap{top:42px;width:min(500px,66vw)}.label{font-size:13px;margin-bottom:3px}.meter{height:22px}.speech{top:19%;padding:7px 12px;font-size:14px;max-width:58%}.grandma{height:48%;bottom:13%;width:min(250px,25vw)}.judge{top:34%;font-size:21px}.specialBtn{width:86px;height:86px;right:12px;bottom:15%;font-size:14px}.card{max-height:96dvh;overflow:hidden;padding:16px}.card h1,.card h2{font-size:23px}.card p{font-size:15px;line-height:1.4}.btn{padding:10px 18px;font-size:17px}.small{font-size:12px}}
 </style>
 </head>
 <body>
@@ -126,7 +126,8 @@ function spawnObject(forceFood=false){
  const data=isBad?bads[Math.floor(Math.random()*bads.length)]:foods[Math.floor(Math.random()*foods.length)];
  const x=rand(W*.18,W*.88),y=H+50;
  const vx=rand(-90,90),vy=rand(special?-930:-850,special?-780:-680);
- objects.push({x,y,vx,vy,r:special?33:31,data,bad:isBad,cut:false,rot:0,vr:rand(-3,3)});
+ const mobileSize=H<=600;
+ objects.push({x,y,vx,vy,r:special?(mobileSize?42:33):(mobileSize?39:31),data,bad:isBad,cut:false,rot:0,vr:rand(-3,3)});
 }
 function drawObj(o){
  ctx.save();ctx.translate(o.x,o.y);ctx.rotate(o.rot);

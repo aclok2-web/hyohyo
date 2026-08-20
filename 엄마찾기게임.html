@@ -193,17 +193,15 @@ function busPass(){
 }
 function scream(){
  try{
-  speechSynthesis.cancel();
-  const cry=new SpeechSynthesisUtterance("꺄아아아악!");
-  cry.lang="ko-KR";cry.pitch=1.9;cry.rate=.72;cry.volume=1;
-  speechSynthesis.speak(cry);
- }catch(e){}
- try{
-  const AC=window.AudioContext||window.webkitAudioContext,ctx=new AC(),now=ctx.currentTime;
-  const osc=ctx.createOscillator(),gain=ctx.createGain();
-  osc.type="sawtooth";osc.frequency.setValueAtTime(930,now);osc.frequency.exponentialRampToValueAtTime(430,now+.85);
-  gain.gain.setValueAtTime(.0001,now);gain.gain.exponentialRampToValueAtTime(.22,now+.025);gain.gain.exponentialRampToValueAtTime(.0001,now+1);
-  osc.connect(gain).connect(ctx.destination);osc.start(now);osc.stop(now+1);
+  if(!window.momJumpScream){
+   window.momJumpScream=new Audio("mom_jumpscare_scream.mp3");
+   window.momJumpScream.preload="auto";
+  }
+  window.momJumpScream.pause();
+  window.momJumpScream.currentTime=0;
+  window.momJumpScream.volume=1;
+  const playback=window.momJumpScream.play();
+  if(playback)playback.catch(()=>{});
  }catch(e){}
 }
 function startJumpScare(){

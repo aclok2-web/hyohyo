@@ -137,6 +137,8 @@ let mode='start',start=null,home=null,startMarker=null,homeMarker=null,routeLine
 let routeCoords=[],checkpoints=[],checkpointIndex=0,carMarker=null,animating=false;
 let score=0,mistakes=0,routeDistance=0,routeDuration=0;
 let horrorStage=0,fakeHomeMarker=null,realHomeLatLng=null,navCorrupted=false;
+let destinationWasMoved=false;
+const REQUIRED_CHECKPOINTS=10,SHORT_ROUTE_METERS=3000;
 const statusEl=document.querySelector('#status'),navbox=document.querySelector('#navbox'),message=document.querySelector('#message');
 
 document.querySelector('#introClose').onclick=()=>document.querySelector('#intro').classList.add('hidden');
@@ -234,43 +236,81 @@ function corruptNavText(cpIndex){
   }
 }
 
+async function fetchRoadRoute(destination){
+  const url=`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true`;
+  const res=await fetch(url);
+  if(!res.ok)throw new Error('route error');
+  const data=await res.json();
+  if(data.code!=='Ok'||!data.routes?.length)throw new Error('no route');
+  return data.routes[0];
+}
+function extractManeuvers(route){
+  const result=[];
+  for(const step of route.legs.flatMap(leg=>leg.steps||[])){
+    const dir=maneuverToDir(step.maneuver||{});
+    const loc=step.maneuver?.location;
+    if(!dir||!loc)continue;
+    result.push({latlng:[loc[1],loc[0]],dir,road:step.name||'이름 없는 도로'});
+  }
+  return result;
+}
+function createStrangeDestination(){
+  const latDirection=realHomeLatLng.lat>=start.lat?1:-1;
+  const lngDirection=realHomeLatLng.lng>=start.lng?-1:1;
+  return L.latLng(realHomeLatLng.lat+latDirection*.024,realHomeLatLng.lng+lngDirection*.032);
+}
+function directionAtRouteIndex(index){
+  const before=routeCoords[Math.max(0,index-3)],here=routeCoords[index],after=routeCoords[Math.min(routeCoords.length-1,index+3)];
+  if(!before||!here||!after)return 'straight';
+  const ax=here[1]-before[1],ay=here[0]-before[0],bx=after[1]-here[1],by=after[0]-here[0];
+  const angle=Math.atan2(ax*by-ay*bx,ax*bx+ay*by)*180/Math.PI;
+  return angle>18?'left':angle<-18?'right':'straight';
+}
+function buildTenCheckpoints(maneuvers){
+  const indexed=maneuvers.map(item=>({...item,routeIndex:nearestRouteIndex(item.latlng,0)}));
+  const result=[];
+  for(let i=0;i<REQUIRED_CHECKPOINTS;i++){
+    const routeIndex=Math.max(0,Math.min(routeCoords.length-1,Math.round((i+1)*(routeCoords.length-1)/(REQUIRED_CHECKPOINTS+1))));
+    let best=null,bestGap=Infinity;
+    for(const item of indexed){
+      const gap=Math.abs(item.routeIndex-routeIndex);
+      if(gap<bestGap){best=item;bestGap=gap;}
+    }
+    const useManeuver=best&&bestGap<=Math.max(5,Math.floor(routeCoords.length/18));
+    const dir=useManeuver?best.dir:directionAtRouteIndex(routeIndex);
+    result.push({latlng:routeCoords[routeIndex],routeIndex,dir,road:useManeuver?best.road:'도로 안내 구간',instruction:dirKorean(dir)});
+  }
+  return result;
+}
+
 document.querySelector('#routeBtn').onclick=async()=>{
  if(!start||!home)return;
  statusEl.textContent='실제 도로 경로를 불러오는 중입니다...';
  document.querySelector('#routeBtn').disabled=true;
  try{
-   const url=`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${home.lng},${home.lat}?overview=full&geometries=geojson&steps=true`;
-   const res=await fetch(url);
-   if(!res.ok)throw new Error('route error');
-   const data=await res.json();
-   if(data.code!=='Ok'||!data.routes?.length)throw new Error('no route');
-   const route=data.routes[0];
+   home=realHomeLatLng;
+   destinationWasMoved=false;
+   if(homeMarker)homeMarker.setLatLng(home).setPopupContent('🏠 우리 집');
+   let route=await fetchRoadRoute(home);
+   if(route.distance<SHORT_ROUTE_METERS){
+     const strangeHome=createStrangeDestination();
+     statusEl.textContent='경로가 너무 가깝습니다. 내비게이션 목적지 오류가 발생했습니다...';
+     route=await fetchRoadRoute(strangeHome);
+     home=strangeHome;destinationWasMoved=true;
+     homeMarker.setLatLng(home).setPopupContent('🏠 목적지...?');
+     horrorMessage('오류: 목적지가 이상한 곳으로 변경되었습니다.');
+     flashStatic();
+     if(navigator.vibrate)navigator.vibrate([250,100,250,100,500]);
+   }
    routeDistance=route.distance;routeDuration=route.duration;
    routeCoords=route.geometry.coordinates.map(c=>[c[1],c[0]]);
    if(routeLine)map.removeLayer(routeLine);
    routeLine=L.polyline(routeCoords,{weight:7,opacity:.82}).addTo(map);
    map.fitBounds(routeLine.getBounds(),{padding:[35,35]});
 
-   checkpoints=[];
-   const steps=route.legs.flatMap(l=>l.steps||[]);
-   for(const s of steps){
-     const d=maneuverToDir(s.maneuver||{});
-     if(!d)continue;
-     const loc=s.maneuver.location;
-     checkpoints.push({
-       latlng:[loc[1],loc[0]],
-       dir:d,
-       road:s.name||'이름 없는 도로',
-       instruction:dirKorean(d)
-     });
-   }
-   // 너무 잦은 안내는 게임성이 떨어지므로 최대 10개만 균등 추출
-   if(checkpoints.length>10){
-     const sampled=[];
-     for(let i=0;i<10;i++) sampled.push(checkpoints[Math.floor(i*(checkpoints.length-1)/9)]);
-     checkpoints=[...new Map(sampled.map(x=>[x.latlng.join(','),x])).values()];
-   }
-   statusEl.innerHTML=`경로 완성! 약 <b>${(routeDistance/1000).toFixed(1)}km</b> · 예상 ${(routeDuration/60).toFixed(0)}분 · 안내 미션 ${checkpoints.length}개`;
+   checkpoints=buildTenCheckpoints(extractManeuvers(route));
+   const errorText=destinationWasMoved?' · <b>목적지 오류 발생!</b>':'';
+   statusEl.innerHTML=`경로 완성! 약 <b>${(routeDistance/1000).toFixed(1)}km</b> · 예상 ${(routeDuration/60).toFixed(0)}분 · 안내 미션 <b>정확히 ${REQUIRED_CHECKPOINTS}개</b>${errorText}`;
    document.querySelector('#playBtn').disabled=false;
  }catch(e){
    statusEl.innerHTML='경로를 불러오지 못했습니다. 인터넷 연결을 확인하거나 출발지·집을 다시 찍어주세요.';
@@ -392,13 +432,20 @@ function showQuestion(cpIndex,currentRouteIndex){
  });
 }
 function finishGame(){
- carMarker.setLatLng(routeCoords[routeCoords.length-1]);
- if(horrorStage>=3){flashStatic();horrorMessage('목적지에 도착했습니다.');}
+ if(destinationWasMoved){
+   carMarker.setLatLng(realHomeLatLng);
+   homeMarker.setLatLng(realHomeLatLng).setPopupContent('🏠 우리 집');
+   flashStatic();horrorMessage('10번째 안내 완료. 실제 집을 다시 찾았습니다.');
+ }else{
+   carMarker.setLatLng(routeCoords[routeCoords.length-1]);
+   if(horrorStage>=3){flashStatic();horrorMessage('목적지에 도착했습니다.');}
+ }
  document.querySelector('#bar').style.width='100%';
  const bonus=Math.max(0,300-mistakes*50);
  score+=bonus;document.querySelector('#score').textContent=score;
  document.querySelector('#finalScore').textContent=score+'점';
- document.querySelector('#finalText').innerHTML=`오늘도 아빠가 무사히 집에 도착했습니다. ❤️<br><br>안내 실수 ${mistakes}회 · 도착 보너스 ${bonus}점<br><br><span style='color:#ffb0b0;font-size:12px'>※ 마지막까지 실제 지도 경로를 믿으세요.</span>`;
+ const arrivalText=destinationWasMoved?'내비게이션이 목적지를 이상한 곳으로 옮겼지만, 10단계 안내를 모두 통과해 실제 집을 다시 찾았습니다.':'오늘도 아빠가 무사히 집에 도착했습니다. ❤️';
+ document.querySelector('#finalText').innerHTML=`${arrivalText}<br><br>완료한 안내 10단계 · 안내 실수 ${mistakes}회 · 도착 보너스 ${bonus}점<br><br><span style='color:#ffb0b0;font-size:12px'>※ 마지막까지 실제 지도 경로를 믿으세요.</span>`;
  document.querySelector('#endModal').classList.remove('hidden');
  document.querySelector('#playBtn').disabled=false;
  try{

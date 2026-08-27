@@ -1494,7 +1494,7 @@
       livingroom: "효찾기 게임.html?v=20260827-2",
       kitchen: "엄마찾기게임.html",
       teen: "효커넥트팩토리/이수아/데시벨게임.html",
-      hall: "아버지퇴근길게임.html",
+      hall: "아버지퇴근길게임.html?v=20260827-1",
       yard: "minigames/yard.html",
       grandmother_cooking: "할머니요리게임.html",
       grandmother_basket: "할머니장바구니게임.html",

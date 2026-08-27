@@ -2,7 +2,9 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>효찾기 게임</title>
   <style>
     :root {
@@ -27,6 +29,7 @@
 
     body {
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -333,6 +336,33 @@
       rafId = requestAnimationFrame(tick);
     }
 
+    function requestPortraitFullscreen() {
+      const lockPortrait = () => {
+        if (screen.orientation && typeof screen.orientation.lock === "function") {
+          screen.orientation.lock("portrait").catch(() => {});
+        }
+      };
+
+      if (window.parent !== window) {
+        lockPortrait();
+        return;
+      }
+
+      const root = document.documentElement;
+      const request = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+      if (!document.fullscreenElement && !document.webkitFullscreenElement && request) {
+        try {
+          const result = request.call(root, { navigationUI: "hide" });
+          if (result && typeof result.then === "function") result.then(lockPortrait).catch(lockPortrait);
+          else lockPortrait();
+        } catch (error) {
+          lockPortrait();
+        }
+      } else {
+        lockPortrait();
+      }
+    }
+
     function tick(now) {
       if (!running) return;
       const dt = Math.min(0.04, (now - lastTime) / 1000);
@@ -397,8 +427,9 @@
         console.warn("효찾기 완료 저장 실패", error);
       }
 
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({ type: "hyo-find-complete" }, "*");
+      const gameHost = window.opener && !window.opener.closed ? window.opener : (window.parent !== window ? window.parent : null);
+      if (gameHost) {
+        gameHost.postMessage({ type: "hyo-find-complete" }, "*");
         setTimeout(() => window.close(), 900);
       } else {
         message.textContent = "모든 효를 찾았습니다. 원래 게임 화면으로 돌아가면 쪽지가 나타납니다.";
@@ -407,7 +438,10 @@
 
     target.addEventListener("click", foundHyo);
     stage.addEventListener("click", missClick);
-    startBtn.addEventListener("click", startGame);
+    startBtn.addEventListener("click", () => {
+      requestPortraitFullscreen();
+      startGame();
+    });
     resetBtn.addEventListener("click", resetGame);
     window.addEventListener("resize", () => {
       if (!running) placeHyo();

@@ -53,6 +53,10 @@
       this.dialog = new window.DialogSystem();
       this.saveManager = new window.SaveManager(this.constants.SAVE_KEY);
       this.audio = window.AudioManager ? new window.AudioManager() : null;
+      this.horrorBgm = new Audio("assets/audio/horror_after_call.mp3?v=1");
+      this.horrorBgm.preload = "auto";
+      this.horrorBgm.loop = true;
+      this.horrorBgm.volume = .34;
       this.codes = [];
       this.inventory = [];
       this.completed = {};
@@ -585,6 +589,23 @@
       });
     }
 
+    startHorrorBgm() {
+      if (!this.horrorBgm) return;
+      this.horrorBgm.currentTime = 0;
+      const playback = this.horrorBgm.play();
+      if (playback && typeof playback.catch === "function") {
+        playback.catch(() => {
+          document.addEventListener("pointerdown", () => this.horrorBgm.play().catch(() => {}), { once: true });
+        });
+      }
+    }
+
+    stopHorrorBgm() {
+      if (!this.horrorBgm) return;
+      this.horrorBgm.pause();
+      this.horrorBgm.currentTime = 0;
+    }
+
     async answerMomCall() {
       if (!this.momCallRunning || this.momCallAnswered) return;
       this.momCallAnswered = true;
@@ -609,6 +630,7 @@
       this.momCallRunning = false;
       this.momCallAnswered = false;
       this.paused = false;
+      this.startHorrorBgm();
     }
 
     isNpcVisible(npc) {
@@ -759,6 +781,7 @@
     }
 
     restartFromBeginning() {
+      this.stopHorrorBgm();
       this.clearProgressStorage();
       this.codes = [];
       this.inventory = [];

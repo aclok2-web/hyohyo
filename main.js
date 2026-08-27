@@ -1505,7 +1505,7 @@
       overlay = document.createElement("div");
       overlay.id = "miniGameOverlay";
       overlay.setAttribute("aria-hidden", "true");
-      overlay.innerHTML = '<button id="miniGameCloseBtn" type="button" aria-label="미니게임 닫기">← 게임으로 돌아가기</button><iframe id="miniGameFrame" title="미니게임" allow="microphone; fullscreen" allowfullscreen></iframe>';
+      overlay.innerHTML = '<button id="miniGameCloseBtn" type="button" aria-label="미니게임 닫기">← 게임으로 돌아가기</button><div id="miniGameRotateNotice" role="status">📱<strong>휴대폰을 세로로 돌려주세요</strong><span>미니게임은 세로 화면에 맞춰져 있습니다.</span></div><iframe id="miniGameFrame" title="미니게임" allow="microphone; fullscreen" allowfullscreen></iframe>';
       document.body.appendChild(overlay);
       overlay.querySelector("#miniGameCloseBtn").addEventListener("click", () => window.closeMiniGameOverlay());
     }
@@ -1518,8 +1518,12 @@
       } catch (error) { /* Same-origin game pages are expected. */ }
     };
     frame.src = url;
+    overlay.classList.add("portrait-mode");
     overlay.classList.add("show");
     overlay.setAttribute("aria-hidden", "false");
+    if (screen.orientation && typeof screen.orientation.lock === "function") {
+      screen.orientation.lock("portrait").catch(() => {});
+    }
     if (window.hyoEscapeGame) {
       const bgm = window.hyoEscapeGame.horrorBgm;
       overlay.dataset.resumeHorrorBgm = bgm && !bgm.paused ? "true" : "false";
@@ -1533,7 +1537,7 @@
     const overlay = document.getElementById("miniGameOverlay");
     if (!overlay) return;
     const frame = overlay.querySelector("#miniGameFrame");
-    overlay.classList.remove("show");
+    overlay.classList.remove("show", "portrait-mode");
     overlay.setAttribute("aria-hidden", "true");
     if (frame) frame.src = "about:blank";
     if (window.hyoEscapeGame) {
@@ -1541,6 +1545,9 @@
       if (overlay.dataset.resumeHorrorBgm === "true" && window.hyoEscapeGame.horrorBgm) {
         window.hyoEscapeGame.horrorBgm.play().catch(() => {});
       }
+    }
+    if (screen.orientation && typeof screen.orientation.lock === "function") {
+      screen.orientation.lock("landscape").catch(() => {});
     }
     requestMobileFullscreen();
     fitGameToViewport();

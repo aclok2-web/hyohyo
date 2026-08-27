@@ -555,21 +555,15 @@
       this.setMomCallRinging(true);
     }
 
-    speak(text, frightened = false) {
+    playMomCallVoice() {
       return new Promise((resolve) => {
-        if (!("speechSynthesis" in window)) { resolve(); return; }
-        speechSynthesis.cancel();
-        const line = new SpeechSynthesisUtterance(text);
-        line.lang = "ko-KR";
-        const koreanVoices = speechSynthesis.getVoices().filter((voice) => voice.lang && voice.lang.toLowerCase().startsWith("ko"));
-        const adultFemaleVoice = koreanVoices.find((voice) => /heami|sunhi|sora|yuna|female|여성/i.test(voice.name));
-        if (adultFemaleVoice || koreanVoices[0]) line.voice = adultFemaleVoice || koreanVoices[0];
-        line.rate = frightened ? .82 : .92;
-        line.pitch = frightened ? .86 : 1.02;
-        line.volume = frightened ? .96 : 1;
-        line.onend = resolve;
-        line.onerror = resolve;
-        speechSynthesis.speak(line);
+        const voice = new Audio("assets/audio/mom_call_voice.mp3?v=1");
+        voice.preload = "auto";
+        voice.volume = 1;
+        voice.onended = resolve;
+        voice.onerror = resolve;
+        const playback = voice.play();
+        if (playback && typeof playback.catch === "function") playback.catch(resolve);
       });
     }
 
@@ -592,8 +586,7 @@
       this.dom.momCallSequence.classList.add("call-connected");
       this.dom.momCallImage.src = "ChatGPT Image 2026년 8월 18일 오전 09_15_20.png";
       await this.wait(3000);
-      const child = this.playerCharacter === "girl" ? "딸" : "아들";
-      await this.speak(`${child}아... 엄마... 잠시만 다녀올게.`, true);
+      await this.playMomCallVoice();
       await this.playScream();
       this.dom.momCallImage.src = "ChatGPT Image 2026년 8월 18일 오전 09_15_32.png";
       this.dom.momCallSequence.classList.add("ringing");

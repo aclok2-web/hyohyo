@@ -19,6 +19,7 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             position: relative;
         }
@@ -255,6 +256,72 @@
             width: 80%; max-width: 600px;
             border: 4px solid #e94560;
         }
+
+        .how-to-play {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px 0 6px;
+        }
+
+        .how-to-play span {
+            padding: 12px 10px;
+            border-radius: 12px;
+            background: rgba(79, 172, 254, .14);
+            border: 1px solid rgba(79, 172, 254, .5);
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        .volume-title { font-weight: 900; }
+        .volume-bar {
+            width: min(420px, 62vw);
+            height: 18px;
+            margin: 8px auto 5px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: rgba(255,255,255,.18);
+            border: 1px solid rgba(255,255,255,.38);
+        }
+        #volume-fill {
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #ffeb3b, #00f2fe);
+            transition: width .08s linear;
+        }
+        #volume-guide {
+            display: block;
+            min-height: 1.5em;
+            color: #ffeb3b;
+            font-size: .82em;
+            font-weight: 900;
+        }
+
+        @media (max-width: 800px), (max-height: 620px) {
+            #story-board {
+                width: min(92vw, 680px);
+                max-height: 92dvh;
+                overflow-y: auto;
+                padding: clamp(18px, 4vw, 30px);
+            }
+            h1 { font-size: clamp(1.8rem, 7vw, 2.7rem); }
+            p.context { font-size: clamp(1rem, 3.6vw, 1.18rem); line-height: 1.6; }
+            .how-to-play { gap: 7px; }
+            .how-to-play span { padding: 9px 6px; font-size: clamp(.78rem, 2.8vw, 1rem); }
+            button { min-height: 52px; padding: 13px 24px; font-size: clamp(1rem, 4vw, 1.25rem); }
+            #parents-cheer { top: 2%; width: clamp(110px, 24vw, 220px); }
+            .tug-of-war-scene { width: 94%; margin-top: clamp(65px, 18vh, 105px); }
+            .character-wrapper { width: clamp(90px, 20vw, 180px); }
+            .avatar { width: clamp(72px, 13vw, 115px); height: clamp(72px, 13vw, 115px); font-size: clamp(2.7rem, 8vw, 4rem); }
+            .char-name { font-size: clamp(.9rem, 3vw, 1.3rem); margin-bottom: 10px; padding: 4px 9px; }
+            .dialogue { width: clamp(145px, 29vw, 230px); min-height: 58px; top: -76px; padding: 9px; font-size: clamp(.76rem, 2.5vw, 1rem); }
+            .rope-container { margin: 0 -10px; }
+            .decibel-meter { margin-top: clamp(18px, 4vh, 34px); padding: 11px 18px; font-size: clamp(1rem, 3.8vw, 1.35rem); }
+            #volume-display { font-size: 1.55em; }
+            #result-screen { width: 90%; padding: clamp(24px, 6vw, 44px); }
+        }
     </style>
 </head>
 <body>
@@ -262,10 +329,15 @@
     <div id="story-board">
         <h1>데시벨 대결</h1>
         <p class="context">
-            과거의 옹고집은 생각보다 훨씬 강력합니다.<br>
-            어설픈 목소리로는 이기적인 과거를 밀어낼 수 없습니다.<br>
-            <span class="warning">[하드 모드: 소리를 크고 길게 7초 이상 유지해야 승리합니다]</span>
+            마이크에 목소리를 들려주어 과거의 나를 밀어내세요.<br>
+            소리가 커질수록 파란색 쪽으로 깃발이 이동합니다.<br>
+            <span class="warning">평소보다 조금 큰 목소리를 몇 초간 유지하면 승리할 수 있어요.</span>
         </p>
+        <div class="how-to-play" aria-label="게임 방법">
+            <span>① 시작 버튼 누르기</span>
+            <span>② 마이크 허용하기</span>
+            <span>③ 목소리를 이어서 내기</span>
+        </div>
         <button id="start-btn">과거와 마주하기 (마이크 허용 필요)</button>
     </div>
 
@@ -273,7 +345,7 @@
 
     <div id="battle-arena">
         <!-- 응원하는 부모님 이미지 로드 -->
-        <img src="Gemini_Generated_Image_61miex61miex61mi_2.png" id="parents-cheer" alt="응원하는 부모님">
+        <img src="../../부모님.png" id="parents-cheer" alt="응원하는 부모님">
 
         <div class="tug-of-war-scene">
             <div class="character-wrapper" id="teen-wrapper">
@@ -294,7 +366,11 @@
             </div>
         </div>
 
-        <div class="decibel-meter">현재 진심의 크기(볼륨): <span id="volume-display">0</span></div>
+        <div class="decibel-meter">
+            <div class="volume-title">현재 목소리 힘: <span id="volume-display">0</span></div>
+            <div class="volume-bar" aria-hidden="true"><div id="volume-fill"></div></div>
+            <span id="volume-guide">목소리를 들려주세요!</span>
+        </div>
     </div>
 
     <div id="result-screen">
@@ -318,6 +394,8 @@
         const countdownScreen = document.getElementById('countdown-screen');
         const centerFlag = document.getElementById('center-flag');
         const volumeDisplay = document.getElementById('volume-display');
+        const volumeFill = document.getElementById('volume-fill');
+        const volumeGuide = document.getElementById('volume-guide');
         
         const teenWrapper = document.getElementById('teen-wrapper');
         const meWrapper = document.getElementById('me-wrapper');
@@ -398,16 +476,27 @@
             }
             let averageVolume = sum / dataArray.length;
             volumeDisplay.innerText = Math.round(averageVolume);
-
-            // 과거의 나는 계속 끌어당깁니다.
-            const teenPower = 0.25 + (Math.random() * 0.1); 
-            
-            let myPower = 0;
-            if (averageVolume > 35) {
-                myPower = (averageVolume - 35) * 0.006; 
+            volumeFill.style.width = Math.min(100, averageVolume / 70 * 100) + '%';
+            if (averageVolume < 25) {
+                volumeGuide.innerText = '조금 더 크게 말해보세요!';
+                volumeGuide.style.color = '#ffeb3b';
+            } else if (averageVolume < 48) {
+                volumeGuide.innerText = '좋아요! 이 목소리를 이어가세요!';
+                volumeGuide.style.color = '#7df9ff';
+            } else {
+                volumeGuide.innerText = '아주 좋아요! 과거의 나를 밀어내고 있어요!';
+                volumeGuide.style.color = '#69ff8f';
             }
 
-            if (averageVolume > 90) {
+            // 과거의 나는 계속 끌어당깁니다.
+            const teenPower = 0.14 + (Math.random() * 0.06);
+            
+            let myPower = 0;
+            if (averageVolume > 25) {
+                myPower = (averageVolume - 25) * 0.008;
+            }
+
+            if (averageVolume > 60) {
                 meAvatar.classList.add('shaking');
             } else {
                 meAvatar.classList.remove('shaking');
@@ -471,8 +560,9 @@
                 } catch (error) {
                     console.warn("데시벨게임 완료 저장 실패", error);
                 }
-                if (window.opener && !window.opener.closed) {
-                    window.opener.postMessage({ type: "decibel-game-complete" }, "*");
+                const gameHost = window.opener && !window.opener.closed ? window.opener : (window.parent !== window ? window.parent : null);
+                if (gameHost) {
+                    gameHost.postMessage({ type: "decibel-game-complete" }, "*");
                     setTimeout(() => window.close(), 2200);
                 } else {
                     setTimeout(() => { window.location.href = "../../index.html"; }, 2200);

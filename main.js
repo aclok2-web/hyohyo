@@ -179,12 +179,18 @@
         if (event.data.type === "father-game-complete") {
           this.completeFatherGame();
         }
+        if (event.data.type === "close-mini-game" || /-complete$/.test(event.data.type)) {
+          if (typeof window.closeMiniGameOverlay === "function") setTimeout(window.closeMiniGameOverlay, 1800);
+        }
       });
       window.addEventListener("storage", (event) => {
         if (event.key === "hyo_find_complete" && event.newValue) this.completeHyoFindGame();
         if (event.key === "nagging_quiz_complete" && event.newValue) this.completeNaggingQuiz();
         if (event.key === "mom_find_complete" && event.newValue) this.completeNaggingQuiz();
         if (event.key === "father_game_complete" && event.newValue) this.completeFatherGame();
+        if (event.newValue && /_game_complete$|_quiz_complete$|^hyo_find_complete$/.test(event.key || "")) {
+          if (typeof window.closeMiniGameOverlay === "function") setTimeout(window.closeMiniGameOverlay, 1800);
+        }
       });
     }
 
@@ -1494,9 +1500,50 @@
     if (!target) return "";
 
     const url = new URL(target, window.location.href).href;
-    const popup = window.open(url, "_blank");
-    if (!popup) window.location.href = url;
+    let overlay = document.getElementById("miniGameOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "miniGameOverlay";
+      overlay.setAttribute("aria-hidden", "true");
+      overlay.innerHTML = '<button id="miniGameCloseBtn" type="button" aria-label="미니게임 닫기">← 게임으로 돌아가기</button><iframe id="miniGameFrame" title="미니게임" allow="microphone; fullscreen" allowfullscreen></iframe>';
+      document.body.appendChild(overlay);
+      overlay.querySelector("#miniGameCloseBtn").addEventListener("click", () => window.closeMiniGameOverlay());
+    }
+
+    const frame = overlay.querySelector("#miniGameFrame");
+    frame.onload = () => {
+      try {
+        const path = frame.contentWindow.location.pathname;
+        if (/\/index\.html$/.test(path)) window.closeMiniGameOverlay();
+      } catch (error) { /* Same-origin game pages are expected. */ }
+    };
+    frame.src = url;
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden", "false");
+    if (window.hyoEscapeGame) {
+      const bgm = window.hyoEscapeGame.horrorBgm;
+      overlay.dataset.resumeHorrorBgm = bgm && !bgm.paused ? "true" : "false";
+      if (bgm && !bgm.paused) bgm.pause();
+      window.hyoEscapeGame.paused = true;
+    }
     return target;
+  };
+
+  window.closeMiniGameOverlay = function () {
+    const overlay = document.getElementById("miniGameOverlay");
+    if (!overlay) return;
+    const frame = overlay.querySelector("#miniGameFrame");
+    overlay.classList.remove("show");
+    overlay.setAttribute("aria-hidden", "true");
+    if (frame) frame.src = "about:blank";
+    if (window.hyoEscapeGame) {
+      window.hyoEscapeGame.paused = false;
+      if (overlay.dataset.resumeHorrorBgm === "true" && window.hyoEscapeGame.horrorBgm) {
+        window.hyoEscapeGame.horrorBgm.play().catch(() => {});
+      }
+    }
+    requestMobileFullscreen();
+    fitGameToViewport();
   };
 
   function isMobileFullscreenTarget() {

@@ -140,6 +140,15 @@ let horrorStage=0,fakeHomeMarker=null,realHomeLatLng=null,navCorrupted=false;
 let destinationWasMoved=false;
 const REQUIRED_CHECKPOINTS=10,SHORT_ROUTE_METERS=3000;
 const statusEl=document.querySelector('#status'),navbox=document.querySelector('#navbox'),message=document.querySelector('#message');
+const navVoices={
+  straight:new Audio('assets/audio/nav_straight.mp3?v=1'),
+  left:new Audio('assets/audio/nav_left.mp3?v=1'),
+  right:new Audio('assets/audio/nav_right.mp3?v=1'),
+  missed:new Audio('assets/audio/nav_missed.mp3?v=1'),
+  angryLeft:new Audio('assets/audio/nav_left_angry.mp3?v=1')
+};
+let activeNavVoice=null;
+Object.values(navVoices).forEach(audio=>{audio.preload='auto';audio.volume=.92;});
 
 document.querySelector('#introClose').onclick=()=>document.querySelector('#intro').classList.add('hidden');
 document.querySelector('#setStart').onclick=()=>{mode='start';statusEl.innerHTML='지도에서 <b>아빠의 출발지</b>를 찍으세요.'};
@@ -176,6 +185,14 @@ function maneuverToDir(m){
 }
 function dirKorean(d){return d==='left'?'좌회전':d==='right'?'우회전':'직진'}
 function dirArrow(d){return d==='left'?'⬅️':d==='right'?'➡️':'⬆️'}
+function playNavVoice(key){
+  const voice=navVoices[key];
+  if(!voice)return;
+  if(activeNavVoice&&activeNavVoice!==voice){activeNavVoice.pause();activeNavVoice.currentTime=0;}
+  activeNavVoice=voice;voice.currentTime=0;
+  const playback=voice.play();
+  if(playback&&typeof playback.catch==='function')playback.catch(()=>{});
+}
 
 
 function flashStatic(){
@@ -225,15 +242,22 @@ function corruptNavText(cpIndex){
     n.textContent='다음 교차로에서 좌회전하세요.';
     r.textContent='하지만 지도는 다른 방향을 가리키고 있습니다.';
     navCorrupted=true;
+    playNavVoice('left');
+    return true;
   }else if(horrorStage===2 && cpIndex>=2){
     n.textContent='좌회전하세요.';
     r.textContent='좌회전하세요. 좌회전하세요.';
     navCorrupted=true;
+    playNavVoice('left');
+    return true;
   }else if(horrorStage>=3 && cpIndex>=3){
     n.textContent='좌회전하라고.';
     r.textContent='경로를 재탐색할 수 없습니다.';
     navCorrupted=true;
+    playNavVoice('angryLeft');
+    return true;
   }
+  return false;
 }
 
 async function fetchRoadRoute(destination){
@@ -260,25 +284,34 @@ function createStrangeDestination(){
   return L.latLng(realHomeLatLng.lat+latDirection*.024,realHomeLatLng.lng+lngDirection*.032);
 }
 function directionAtRouteIndex(index){
-  const before=routeCoords[Math.max(0,index-3)],here=routeCoords[index],after=routeCoords[Math.min(routeCoords.length-1,index+3)];
+  const offset=Math.max(3,Math.round(routeCoords.length/120));
+  const before=routeCoords[Math.max(0,index-offset)],here=routeCoords[index],after=routeCoords[Math.min(routeCoords.length-1,index+offset)];
   if(!before||!here||!after)return 'straight';
   const ax=here[1]-before[1],ay=here[0]-before[0],bx=after[1]-here[1],by=after[0]-here[0];
   const angle=Math.atan2(ax*by-ay*bx,ax*bx+ay*by)*180/Math.PI;
   return angle>18?'left':angle<-18?'right':'straight';
 }
 function buildTenCheckpoints(maneuvers){
-  const indexed=maneuvers.map(item=>({...item,routeIndex:nearestRouteIndex(item.latlng,0)}));
+  const lastIndex=routeCoords.length-1;
+  const indexed=maneuvers.map(item=>({...item,routeIndex:nearestRouteIndex(item.latlng,0)})).filter(item=>item.routeIndex>0&&item.routeIndex<lastIndex);
+  const usedManeuvers=new Set();
   const result=[];
+  let previousIndex=0;
   for(let i=0;i<REQUIRED_CHECKPOINTS;i++){
-    const routeIndex=Math.max(0,Math.min(routeCoords.length-1,Math.round((i+1)*(routeCoords.length-1)/(REQUIRED_CHECKPOINTS+1))));
+    const maxAllowed=Math.max(previousIndex+1,lastIndex-(REQUIRED_CHECKPOINTS-i));
+    const desiredIndex=Math.max(previousIndex+1,Math.min(maxAllowed,Math.round((i+1)*lastIndex/(REQUIRED_CHECKPOINTS+1))));
     let best=null,bestGap=Infinity;
     for(const item of indexed){
-      const gap=Math.abs(item.routeIndex-routeIndex);
+      if(usedManeuvers.has(item)||item.routeIndex<=previousIndex||item.routeIndex>maxAllowed)continue;
+      const gap=Math.abs(item.routeIndex-desiredIndex);
       if(gap<bestGap){best=item;bestGap=gap;}
     }
-    const useManeuver=best&&bestGap<=Math.max(5,Math.floor(routeCoords.length/18));
+    const useManeuver=best&&bestGap<=Math.max(4,Math.ceil(lastIndex/(REQUIRED_CHECKPOINTS*2)));
+    const routeIndex=useManeuver?best.routeIndex:desiredIndex;
+    if(useManeuver)usedManeuvers.add(best);
     const dir=useManeuver?best.dir:directionAtRouteIndex(routeIndex);
     result.push({latlng:routeCoords[routeIndex],routeIndex,dir,road:useManeuver?best.road:'도로 안내 구간',instruction:dirKorean(dir)});
+    previousIndex=routeIndex;
   }
   return result;
 }
@@ -393,7 +426,7 @@ function showQuestion(cpIndex,currentRouteIndex){
  document.querySelector('#navTitle').textContent='어느 방향으로 안내할까요?';
  document.querySelector('#navRoad').textContent=`${c.road} 부근 · ${cpIndex+1}/${checkpoints.length}번째 안내`;
  navCorrupted=false;
- setTimeout(()=>corruptNavText(cpIndex),180);
+ setTimeout(()=>{if(!corruptNavText(cpIndex))playNavVoice(c.dir);},180);
  document.querySelector('#bar').style.width=((cpIndex/checkpoints.length)*100)+'%';
  message.textContent='';
  document.querySelectorAll('.choice').forEach(b=>{
@@ -432,6 +465,7 @@ function showQuestion(cpIndex,currentRouteIndex){
  });
 }
 function finishGame(){
+ playNavVoice('missed');
  if(destinationWasMoved){
    carMarker.setLatLng(realHomeLatLng);
    homeMarker.setLatLng(realHomeLatLng).setPopupContent('🏠 우리 집');

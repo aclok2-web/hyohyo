@@ -136,8 +136,14 @@
     bindEvents() {
       window.addEventListener("keydown", (event) => this.onKey(event, true));
       window.addEventListener("keyup", (event) => this.onKey(event, false));
-      this.dom.start.addEventListener("click", () => this.start());
-      this.dom.resume.addEventListener("click", () => this.togglePause(false));
+      this.dom.start.addEventListener("click", () => {
+        if (this.playerCharacter) requestMobileFullscreen();
+        this.start();
+      });
+      this.dom.resume.addEventListener("click", () => {
+        requestMobileFullscreen();
+        this.togglePause(false);
+      });
       this.dom.save.addEventListener("click", () => {
         this.saveGame();
         this.toast("저장되었습니다.");
@@ -1470,6 +1476,39 @@
     return target;
   };
 
+  function isMobileFullscreenTarget() {
+    return window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 900;
+  }
+
+  function requestMobileFullscreen() {
+    if (!isMobileFullscreenTarget()) return;
+
+    const root = document.documentElement;
+    const alreadyFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    const request = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+
+    if (!alreadyFullscreen && request) {
+      try {
+        const result = request.call(root, { navigationUI: "hide" });
+        if (result && typeof result.then === "function") {
+          result.then(() => {
+            if (screen.orientation && typeof screen.orientation.lock === "function") {
+              screen.orientation.lock("landscape").catch(() => {});
+            }
+            fitGameToViewport();
+          }).catch(() => {});
+        }
+      } catch (error) {
+        try { request.call(root); } catch (fallbackError) { /* Browser does not permit page fullscreen. */ }
+      }
+    }
+
+    setTimeout(() => {
+      window.scrollTo(0, 1);
+      fitGameToViewport();
+    }, 250);
+  }
+
   function fitGameToViewport() {
     const game = document.getElementById("game");
     if (!game) return;
@@ -1488,6 +1527,8 @@
   }
   window.addEventListener("resize", fitGameToViewport, { passive: true });
   window.addEventListener("orientationchange", fitGameToViewport, { passive: true });
+  document.addEventListener("fullscreenchange", fitGameToViewport);
+  document.addEventListener("webkitfullscreenchange", fitGameToViewport);
   if (window.visualViewport) window.visualViewport.addEventListener("resize", fitGameToViewport, { passive: true });
   fitGameToViewport();
 

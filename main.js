@@ -53,10 +53,14 @@
       this.dialog = new window.DialogSystem();
       this.saveManager = new window.SaveManager(this.constants.SAVE_KEY);
       this.audio = window.AudioManager ? new window.AudioManager() : null;
-      this.horrorBgm = new Audio("assets/audio/horror_after_call.mp3?v=1");
+      this.horrorBgm = new Audio("assets/audio/horror_after_call.mp3?v=2");
       this.horrorBgm.preload = "auto";
       this.horrorBgm.loop = true;
       this.horrorBgm.volume = .34;
+      this.epilogueBgm = new Audio("assets/audio/horror_after_call.mp3?v=2");
+      this.epilogueBgm.preload = "auto";
+      this.epilogueBgm.loop = true;
+      this.epilogueBgm.volume = .38;
       this.codes = [];
       this.inventory = [];
       this.completed = {};
@@ -140,6 +144,7 @@
     bindEvents() {
       window.addEventListener("keydown", (event) => this.onKey(event, true));
       window.addEventListener("keyup", (event) => this.onKey(event, false));
+      window.addEventListener("pointerdown", () => this.syncBackgroundMusic(), { capture: true });
       this.dom.start.addEventListener("click", () => {
         if (this.playerCharacter) requestMobileFullscreen();
         this.start();
@@ -259,6 +264,7 @@
 
     onKey(event, pressed) {
       const key = event.key.toLowerCase();
+      if (pressed) this.syncBackgroundMusic();
       if (pressed && this.dom.title.style.display !== "none" && !this.hasSaveData) {
         if (key === "arrowleft" || key === "a") {
           event.preventDefault();
@@ -476,6 +482,7 @@
       this.toast(`비밀번호 글자 ${clue ? clue.letter : reward.code || ""} 획득`);
       this.updateUI();
       this.saveGame();
+      if (reward.code === "4") this.startHorrorBgm();
     }
 
     startMiniGame(roomId) {
@@ -509,6 +516,7 @@
       if (showToast) this.toast("엄마찾기 완료! 그런데 엄마가 갑자기 사라졌습니다.");
       this.updateUI();
       this.saveGame();
+      this.startHorrorBgm();
       if (showToast) this.startMomCallSequence();
     }
 
@@ -600,20 +608,36 @@
     }
 
     startHorrorBgm() {
-      if (!this.horrorBgm) return;
-      this.horrorBgm.currentTime = 0;
+      if (!this.horrorBgm || !this.codes.includes("4") || this.epilogueMode || !this.horrorBgm.paused) return;
       const playback = this.horrorBgm.play();
-      if (playback && typeof playback.catch === "function") {
-        playback.catch(() => {
-          document.addEventListener("pointerdown", () => this.horrorBgm.play().catch(() => {}), { once: true });
-        });
-      }
+      if (playback && typeof playback.catch === "function") playback.catch(() => {});
     }
 
     stopHorrorBgm() {
       if (!this.horrorBgm) return;
       this.horrorBgm.pause();
       this.horrorBgm.currentTime = 0;
+    }
+
+    startEpilogueBgm() {
+      if (!this.epilogueBgm || !this.epilogueMode || !this.epilogueBgm.paused) return;
+      const playback = this.epilogueBgm.play();
+      if (playback && typeof playback.catch === "function") playback.catch(() => {});
+    }
+
+    stopEpilogueBgm() {
+      if (!this.epilogueBgm) return;
+      this.epilogueBgm.pause();
+      this.epilogueBgm.currentTime = 0;
+    }
+
+    syncBackgroundMusic() {
+      if (this.epilogueMode) {
+        this.stopHorrorBgm();
+        this.startEpilogueBgm();
+      } else if (this.codes.includes("4")) {
+        this.startHorrorBgm();
+      }
     }
 
     async answerMomCall() {
@@ -737,6 +761,8 @@
 
     startEpilogue() {
       this.epilogueMode = true;
+      this.stopHorrorBgm();
+      this.startEpilogueBgm();
       this.epilogueCompleted = new Set();
       this.started = true;
       this.paused = false;
@@ -798,6 +824,7 @@
 
     restartFromBeginning() {
       this.stopHorrorBgm();
+      this.stopEpilogueBgm();
       this.clearProgressStorage();
       this.codes = [];
       this.inventory = [];

@@ -104,6 +104,37 @@ body::before {
 
 #momCallSequence.show { display: grid; }
 
+#momCallRotateNotice {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: none;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  padding: 30px;
+  background: #000;
+  color: #fff;
+  text-align: center;
+  font-size: clamp(42px, 10vw, 72px);
+}
+
+#momCallRotateNotice strong {
+  font-size: clamp(22px, 5vw, 34px);
+  color: #ffeb3b;
+}
+
+#momCallRotateNotice span {
+  font-size: clamp(15px, 3.5vw, 20px);
+  color: #ddd;
+}
+
+@media (orientation: landscape) and (pointer: coarse) {
+  #momCallSequence.portrait-mode #momCallRotateNotice { display: grid; }
+  #momCallSequence.portrait-mode #momMissingText,
+  #momCallSequence.portrait-mode #momCallScreen { visibility: hidden; }
+}
+
 body.mom-call-active {
   overflow: hidden;
   background: #000;

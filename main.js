@@ -563,8 +563,12 @@
       this.dom.momCallImage.src = "ChatGPT Image 2026년 8월 18일 오전 10_26_40.png";
       this.dom.momMissingText.classList.remove("hide");
       this.dom.momCallSequence.classList.remove("call-connected");
+      this.dom.momCallSequence.classList.add("portrait-mode");
       this.dom.momCallSequence.classList.add("show");
       this.dom.momCallSequence.setAttribute("aria-hidden", "false");
+      if (screen.orientation && typeof screen.orientation.lock === "function") {
+        screen.orientation.lock("portrait").catch(() => {});
+      }
       await this.wait(1600);
       if (!this.momCallRunning) return;
       this.dom.momMissingText.classList.add("hide");
@@ -614,6 +618,9 @@
 
     async answerMomCall() {
       if (!this.momCallRunning || this.momCallAnswered) return;
+      if (screen.orientation && typeof screen.orientation.lock === "function") {
+        screen.orientation.lock("portrait").catch(() => {});
+      }
       this.momCallAnswered = true;
       this.setMomCallRinging(false);
       this.dom.momCallSequence.classList.add("call-connected");
@@ -630,12 +637,15 @@
 
     finishMomCallSequence() {
       this.setMomCallRinging(false);
-      this.dom.momCallSequence.classList.remove("show", "call-connected", "ringing");
+      this.dom.momCallSequence.classList.remove("show", "call-connected", "ringing", "portrait-mode");
       this.dom.momCallSequence.setAttribute("aria-hidden", "true");
       document.body.classList.remove("mom-call-active");
       this.momCallRunning = false;
       this.momCallAnswered = false;
       this.paused = false;
+      if (screen.orientation && typeof screen.orientation.lock === "function") {
+        screen.orientation.lock("landscape").catch(() => {});
+      }
       this.startHorrorBgm();
     }
 

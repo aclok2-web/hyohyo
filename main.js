@@ -1542,7 +1542,7 @@
       overlay = document.createElement("div");
       overlay.id = "miniGameOverlay";
       overlay.setAttribute("aria-hidden", "true");
-      overlay.innerHTML = '<button id="miniGameCloseBtn" type="button" aria-label="미니게임 닫기">← 게임으로 돌아가기</button><div id="miniGameRotateNotice" role="status">📱<strong>휴대폰을 세로로 돌려주세요</strong><span>미니게임은 세로 화면에 맞춰져 있습니다.</span></div><iframe id="miniGameFrame" title="미니게임" allow="microphone; fullscreen" allowfullscreen></iframe>';
+      overlay.innerHTML = '<button id="miniGameCloseBtn" type="button" aria-label="미니게임 닫기">← 게임으로 돌아가기</button><iframe id="miniGameFrame" title="미니게임" allow="microphone; fullscreen" allowfullscreen></iframe>';
       document.body.appendChild(overlay);
       overlay.querySelector("#miniGameCloseBtn").addEventListener("click", () => window.closeMiniGameOverlay());
     }

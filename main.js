@@ -567,6 +567,7 @@
       if (this.momCallRunning || !this.dom.momCallSequence) return;
       this.momCallRunning = true;
       this.paused = true;
+      ensureMomCallPortraitFullscreen();
       document.body.classList.add("mom-call-active");
       this.dom.momCallImage.src = "ChatGPT Image 2026년 8월 18일 오전 10_26_40.png";
       this.dom.momMissingText.classList.remove("hide");
@@ -642,9 +643,7 @@
 
     async answerMomCall() {
       if (!this.momCallRunning || this.momCallAnswered) return;
-      if (screen.orientation && typeof screen.orientation.lock === "function") {
-        screen.orientation.lock("portrait").catch(() => {});
-      }
+      ensureMomCallPortraitFullscreen();
       this.momCallAnswered = true;
       this.setMomCallRinging(false);
       this.dom.momCallSequence.classList.add("call-connected");
@@ -1577,21 +1576,43 @@
     overlay.classList.remove("show", "portrait-mode");
     overlay.setAttribute("aria-hidden", "true");
     if (frame) frame.src = "about:blank";
+    const momCallActive = Boolean(window.hyoEscapeGame && window.hyoEscapeGame.momCallRunning);
     if (window.hyoEscapeGame) {
-      window.hyoEscapeGame.paused = false;
+      window.hyoEscapeGame.paused = momCallActive;
       if (overlay.dataset.resumeHorrorBgm === "true" && window.hyoEscapeGame.horrorBgm) {
         window.hyoEscapeGame.horrorBgm.play().catch(() => {});
       }
     }
     if (screen.orientation && typeof screen.orientation.lock === "function") {
-      screen.orientation.lock("landscape").catch(() => {});
+      screen.orientation.lock(momCallActive ? "portrait" : "landscape").catch(() => {});
     }
-    requestMobileFullscreen();
+    if (!momCallActive) requestMobileFullscreen();
     fitGameToViewport();
   };
 
   function isMobileFullscreenTarget() {
     return window.matchMedia("(pointer: coarse)").matches || window.innerWidth <= 900;
+  }
+
+  async function ensureMomCallPortraitFullscreen() {
+    if (!isMobileFullscreenTarget()) return;
+
+    const root = document.documentElement;
+    const alreadyFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    const request = root.requestFullscreen || root.webkitRequestFullscreen || root.msRequestFullscreen;
+
+    if (!alreadyFullscreen && request) {
+      try {
+        await request.call(root, { navigationUI: "hide" });
+      } catch (error) {
+        try { await request.call(root); } catch (fallbackError) { /* Fullscreen needs a supported user gesture. */ }
+      }
+    }
+
+    if (screen.orientation && typeof screen.orientation.lock === "function") {
+      screen.orientation.lock("portrait").catch(() => {});
+    }
+    fitGameToViewport();
   }
 
   function requestMobileFullscreen() {
@@ -1640,9 +1661,17 @@
     game.style.transform = `translate(-50%, -50%) scale(${Math.max(0.1, scale)})`;
   }
   window.addEventListener("resize", fitGameToViewport, { passive: true });
-  window.addEventListener("orientationchange", fitGameToViewport, { passive: true });
-  document.addEventListener("fullscreenchange", fitGameToViewport);
-  document.addEventListener("webkitfullscreenchange", fitGameToViewport);
+  function maintainMomCallPortrait() {
+    if (window.hyoEscapeGame && window.hyoEscapeGame.momCallRunning) {
+      if (screen.orientation && typeof screen.orientation.lock === "function") {
+        screen.orientation.lock("portrait").catch(() => {});
+      }
+    }
+    fitGameToViewport();
+  }
+  window.addEventListener("orientationchange", maintainMomCallPortrait, { passive: true });
+  document.addEventListener("fullscreenchange", maintainMomCallPortrait);
+  document.addEventListener("webkitfullscreenchange", maintainMomCallPortrait);
   if (window.visualViewport) window.visualViewport.addEventListener("resize", fitGameToViewport, { passive: true });
   fitGameToViewport();
 

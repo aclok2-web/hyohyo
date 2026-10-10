@@ -232,11 +232,11 @@
     <div class="topbar">
       <div>
         <h1>효를 찾아라</h1>
-        <p class="message" id="message">가족사진이 빠르게 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.</p>
+        <p class="message" id="message">가족사진이 보통 속도로 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.</p>
       </div>
       <div class="summary">
         <div class="chip"><span>찾은 효</span><strong id="foundValue">0 / 5</strong></div>
-        <div class="chip"><span>속도</span><strong id="speedValue">빠름</strong></div>
+        <div class="chip"><span>속도</span><strong id="speedValue">보통</strong></div>
         <div class="chip"><span>실수</span><strong id="missValue">0</strong></div>
       </div>
     </div>
@@ -259,8 +259,7 @@
 
   <script>
     const TOTAL_HYO = 5;
-    const SPEEDS = [544, 416, 288, 116, 56, 0];
-    const SPEED_LABELS = ["빠름", "조금 빠름", "보통", "식별 가능", "느림", "멈춤"];
+    const NORMAL_SPEED = 288;
 
     const stage = document.getElementById("stage");
     const track = document.getElementById("track");
@@ -287,12 +286,12 @@
     }
 
     function currentSpeed() {
-      return SPEEDS[Math.min(found, SPEEDS.length - 1)];
+      return found >= TOTAL_HYO ? 0 : NORMAL_SPEED;
     }
 
     function updateUi() {
       foundValue.textContent = `${found} / ${TOTAL_HYO}`;
-      speedValue.textContent = SPEED_LABELS[Math.min(found, SPEED_LABELS.length - 1)];
+      speedValue.textContent = found >= TOTAL_HYO ? "완료" : "보통";
       missValue.textContent = misses;
     }
 
@@ -319,7 +318,7 @@
       placeHyo();
       updateUi();
       startBtn.disabled = false;
-      message.textContent = "가족사진이 빠르게 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.";
+      message.textContent = "가족사진이 보통 속도로 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.";
     }
 
     function startGame() {
@@ -332,7 +331,7 @@
       placeHyo();
       updateUi();
       startBtn.disabled = true;
-      message.textContent = "움직이는 가족사진 속 효를 클릭하세요. 찾을수록 사진이 느려집니다.";
+      message.textContent = "움직이는 가족사진 속 효를 클릭하세요. 사진은 계속 보통 속도로 움직입니다.";
       rafId = requestAnimationFrame(tick);
     }
 
@@ -404,11 +403,7 @@
         return;
       }
 
-      if (found === 3) {
-        message.textContent = "세 번째 효를 찾았습니다. 이제 가족사진을 식별할 수 있을 만큼 느려졌습니다.";
-      } else {
-        message.textContent = `효를 찾았습니다. 사진 속도가 조금 느려집니다. (${found} / ${TOTAL_HYO})`;
-      }
+      message.textContent = `효를 찾았습니다! (${found} / ${TOTAL_HYO}) 보통 속도로 계속 찾아보세요.`;
 
       setTimeout(placeHyo, 260);
     }

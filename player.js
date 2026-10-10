@@ -9,8 +9,8 @@
   };
   const SPRITE_WIDTH = 36;
   const SPRITE_HEIGHT = 48;
-  const DISPLAY_WIDTH = 42;
-  const DISPLAY_HEIGHT = 56;
+  const DISPLAY_WIDTH = 36 * (C.CHARACTER_SCALE || 2);
+  const DISPLAY_HEIGHT = 48 * (C.CHARACTER_SCALE || 2);
   const FRAME_SEQUENCE = [0, 1, 2, 1];
   const DIRECTION_ROW = {
     down: 0,
@@ -36,9 +36,9 @@
     constructor(x, y) {
       this.x = x;
       this.y = y;
-      this.width = C.PLAYER_WIDTH || 28;
-      this.height = C.PLAYER_HEIGHT || 38;
-      this.speed = C.PLAYER_SPEED || 2.4;
+      this.width = C.PLAYER_WIDTH || 32;
+      this.height = C.PLAYER_HEIGHT || 42;
+      this.speed = C.PLAYER_SPEED || 288;
       this.direction = "down";
       this.frame = 0;
       this.frameTimer = 0;
@@ -74,13 +74,13 @@
       return { x: rect.x + rect.width, y: rect.y, width: d, height: rect.height };
     }
 
-    update(input, room) {
-      let dx = 0;
-      let dy = 0;
-      if (input.left) dx = -this.speed;
-      else if (input.right) dx = this.speed;
-      else if (input.up) dy = -this.speed;
-      else if (input.down) dy = this.speed;
+    update(input, room, deltaSeconds = 1 / 60) {
+      const dt=Math.max(0,Math.min(.05,deltaSeconds));
+      const horizontal=Number(Boolean(input.right))-Number(Boolean(input.left));
+      const vertical=Number(Boolean(input.down))-Number(Boolean(input.up));
+      const length=Math.hypot(horizontal,vertical)||1;
+      const dx=horizontal/length*this.speed*dt;
+      const dy=vertical/length*this.speed*dt;
 
       this.moving = dx !== 0 || dy !== 0;
       if (dx < 0) this.direction = "left";
@@ -92,7 +92,7 @@
       if (dy !== 0) this.tryMove(0, dy, room);
 
       if (this.moving) {
-        this.frameTimer += 1;
+        this.frameTimer += dt * 60;
         if (this.frameTimer > 10) {
           this.frame = (this.frame + 1) % 4;
           this.frameTimer = 0;
@@ -126,8 +126,8 @@
         const sourceSize = 627;
         const sourceX = this.direction === "up" || this.direction === "right" ? sourceSize : 0;
         const sourceY = this.direction === "left" || this.direction === "right" ? sourceSize : 0;
-        const width = 72;
-        const height = 92;
+        const width = DISPLAY_WIDTH;
+        const height = DISPLAY_HEIGHT;
         const agedX = Math.round(sx + this.width / 2 - width / 2);
         const agedY = Math.round(sy + this.height - height + bob);
         ctx.save();

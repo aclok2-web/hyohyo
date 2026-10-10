@@ -11,7 +11,7 @@
 
 <title>효 방탈출 : 잃어버린 마음의 지도</title>
 
-<link rel="stylesheet" href="style.css?v=20260827-4">
+<link rel="stylesheet" href="style.css?v=20261010-mobile-arrows">
 
 </head>
 
@@ -130,8 +130,11 @@
     </div>
 
     <div id="mobileControls" class="mobile-controls" aria-label="모바일 조작기">
-        <div id="moveJoystick" class="move-joystick" aria-label="이동 조이스틱">
-            <div id="joystickKnob" class="joystick-knob"></div>
+        <div class="mobile-dpad" aria-label="이동 방향">
+            <button type="button" data-move="up" aria-label="위로 이동">↑</button>
+            <button type="button" data-move="left" aria-label="왼쪽으로 이동">←</button>
+            <button type="button" data-move="down" aria-label="아래로 이동">↓</button>
+            <button type="button" data-move="right" aria-label="오른쪽으로 이동">→</button>
         </div>
         <button id="mobileActionBtn" class="mobile-action" type="button">조사·대화</button>
     </div>
@@ -243,14 +246,15 @@
 
 </div>
 
-<script src="rooms.js?v=20260818-2"></script>
-<script src="player.js?v=20260818-3"></script>
-<script src="collision.js?v=20260818-2"></script>
+<script src="constants.js?v=20261010-pacing"></script>
+<script src="rooms.js?v=20261010-mobile-arrows"></script>
+<script src="player.js?v=20261010-pacing"></script>
+<script src="collision.js?v=20261010-mobile-arrows"></script>
 <script src="dialog.js?v=20260818-4"></script>
-<script src="npc.js?v=20260818-2"></script>
+<script src="npc.js?v=20261010-pacing"></script>
 <script src="camera.js?v=20260818-2"></script>
 <script src="save.js?v=20260818-2"></script>
-  <script src="main.js?v=20260901-1"></script>
+  <script src="main.js?v=20261010-mobile-arrows"></script>
 
 </body>
 </html>

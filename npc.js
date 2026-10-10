@@ -42,7 +42,7 @@
       const x = Math.round(this.x - camera.x);
       const y = Math.round(this.y - camera.y);
       const image = this.getImage(this.getSpriteForGame(game)) || this.image;
-      const scale = game && game.npcScale ? game.npcScale : 2;
+      const scale = game && game.npcScale ? game.npcScale : (window.HYO_CONSTANTS?.CHARACTER_SCALE || 2);
       if (image && image.complete && image.naturalWidth) {
         const frameWidth = this.spriteWidth || 36;
         const frameHeight = this.spriteHeight || 48;

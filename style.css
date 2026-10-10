@@ -803,3 +803,45 @@ button:disabled {
   .character-card { min-height: 96px; }
   #startBtn { margin-top: 0; }
 }
+
+/* Smooth supplied room art; sprite sampling remains crisp in canvas. */
+#gameCanvas { image-rendering: auto; }
+
+/* Larger story text in the fixed game viewport. */
+#dialogBox{min-height:190px;max-height:300px;padding:16px 22px 36px;overflow-y:auto;}
+#speaker{font-size:20px;margin-bottom:8px;}
+#dialogText{font-size:32px;line-height:1.5;min-height:78px;padding-bottom:8px;overflow-wrap:anywhere;}
+#next{font-size:17px;bottom:10px;}
+
+
+/* Unscaled thumb controls remain usable in either phone orientation. */
+.mobile-controls { position:fixed; }
+body:has(#game.mobile-playing) .mobile-controls { display:block; }
+.mobile-dpad {
+  position:absolute; left:max(12px, env(safe-area-inset-left));
+  bottom:max(12px, env(safe-area-inset-bottom));
+  display:grid; grid-template-columns:repeat(3,48px); grid-template-rows:repeat(2,48px);
+  gap:5px; pointer-events:auto; touch-action:none; user-select:none;
+}
+.mobile-dpad button {
+  width:48px; height:48px; min-width:0; margin:0; padding:0;
+  border:2px solid #eadcb9; border-radius:12px;
+  background:rgba(30,20,26,.86); color:#fff4c4; font-size:30px;
+  touch-action:none; user-select:none; -webkit-user-select:none;
+  -webkit-touch-callout:none;
+}
+.mobile-dpad [data-move="up"] { grid-column:2; }
+.mobile-dpad [data-move="left"] { grid-column:1; grid-row:2; }
+.mobile-dpad [data-move="down"] { grid-column:2; grid-row:2; }
+.mobile-dpad [data-move="right"] { grid-column:3; grid-row:2; }
+.mobile-dpad button.pressed { background:#a12f3e; transform:scale(.94); }
+.mobile-controls .mobile-action {
+  right:max(12px, env(safe-area-inset-right)); bottom:max(20px, env(safe-area-inset-bottom));
+  width:104px; height:58px; font-size:17px; border-radius:16px;
+}
+body:has(#dialogBox[style*="display: block"]) .mobile-dpad { visibility:hidden; }
+body:has(#pauseMenu.show) .mobile-controls,
+body:has(#endingScreen.show) .mobile-controls { display:none; }
+@media (pointer:coarse), (max-width:980px) {
+  #help { display:none; }
+}

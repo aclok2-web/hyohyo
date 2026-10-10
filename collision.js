@@ -36,7 +36,7 @@
         .concat((room.npcs || []).map((item) => Object.assign({ kind: "npc" }, item)))
         .concat((room.objects || []).filter((item) => item.interactive !== false).map((item) => Object.assign({ kind: "object" }, item)))
         .concat((room.doors || []).map((item) => Object.assign({ kind: "door" }, item)));
-      return candidates.find((item) => overlap(facing, item)) || null;
+      return candidates.find((item) => overlap(facing, item.interactionRect || item)) || null;
     }
   }
 

@@ -37,7 +37,7 @@
         { id: "memory_child", name: "어린 나", x: 640, y: 365, width: 32, height: 42, spriteByCharacter: { boy: "assets/characters/npc/child_boy_walk.png", girl: "assets/characters/npc/child_girl_walk.png" }, spriteWidth: 36, spriteHeight: 48, displayWidth: 36, displayHeight: 48, dialogs: ["여기서 가족과 웃던 장면을 기억해?", "TV와 사진 속에 숨은 효 글자를 찾아봐."] },
       ],
       objects: [
-        object("living_tv", "TV", 210, 92, 260, 198, "tv", ["화면 안 가족 영상이 빠르게 지나간다.", "효를 모두 찾으면 거실 어딘가에 쪽지가 나타날 것 같다."], { image: "assets/objects/living_tv.png", miniGame: "livingroom" }),
+        object("living_tv", "TV", 210, 92, 260, 198, "tv", ["화면 안 가족 영상이 보통 속도로 지나간다.", "효를 모두 찾으면 거실 어딘가에 쪽지가 나타날 것 같다."], { image: "assets/objects/living_tv.png", miniGame: "livingroom" }),
         object("family_photo_living", "가족사진", 520, 96, 150, 135, "photo", ["사진 속 웃음이 잠시 멈춘다.", "가족과 함께한 시간이 가장 소중한 추억이라는 말이 떠오른다."], { image: "assets/objects/living_family_photo.png", reward: { code: "2", item: "거실 사진 조각" } }),
         object("proverb_note", "속담 쪽지", 365, 365, 58, 64, "note", ["문장 조각이 적혀 있다.", "'부모의 마음은 끝이 없다'라는 속담이 완성된다."], { image: "assets/objects/living_note.png", hiddenUntilCompleted: "livingroom:hyo_find_complete", reward: { code: "3", item: "속담 쪽지" } }),
       ],
@@ -144,4 +144,31 @@
       ],
     },
   };
+
+  // Coordinates match the supplied 1586 x 992 room illustrations.
+  const layouts={
+    livingroom:{spawn:{x:185,y:475},left:null,right:{x:1070,y:235,width:58,height:100},landingLeft:{x:185,y:475},landingRight:{x:975,y:360},backWall:{x:24,y:24,width:1040,height:120},furniture:[{x:334,y:140,width:480,height:175},{x:422,y:294,width:310,height:128}],npc:{x:770,y:480},objects:{living_tv:[456,500,240,170],family_photo_living:[526,270,102,82],proverb_note:[643,347,64,64]}},
+    kitchen:{spawn:{x:115,y:485},left:{x:24,y:335,width:65,height:125},right:{x:1064,y:335,width:65,height:125},landingLeft:{x:125,y:485},landingRight:{x:995,y:485},backWall:{x:110,y:24,width:925,height:290},furniture:[{x:110,y:285,width:550,height:50}],npc:{x:765,y:460},objects:{fridge:[675,140,120,195],table:[385,460,250,130]}},
+    teen:{spawn:{x:115,y:455},left:{x:24,y:315,width:80,height:120},right:{x:1048,y:315,width:80,height:120},landingLeft:{x:120,y:455},landingRight:{x:995,y:455},backWall:{x:145,y:24,width:865,height:150},furniture:[{x:105,y:180,width:300,height:250}],npc:{x:645,y:490},objects:{mirror:[535,25,125,150],desk:[750,215,265,160]}},
+    hall:{spawn:{x:145,y:370},left:{x:24,y:280,width:100,height:75},right:{x:1028,y:280,width:100,height:75},landingLeft:{x:145,y:370},landingRight:{x:960,y:370},backWall:{x:135,y:24,width:880,height:265},furniture:[{x:145,y:236,width:165,height:104}],npc:{x:440,y:390},objects:{shoe_box_hall:[760,380,155,155]}},
+    yard:{spawn:{x:150,y:420},left:{x:24,y:310,width:112,height:90},right:{x:1010,y:310,width:118,height:90},landingLeft:{x:155,y:420},landingRight:{x:965,y:420},backWall:{x:145,y:24,width:855,height:335},furniture:[],npc:{x:640,y:445},objects:{yard_boxes:[300,445,155,155]}},
+    entrance:{spawn:{x:175,y:340},left:{x:40,y:240,width:120,height:70},right:{x:1000,y:240,width:120,height:70},landingLeft:{x:175,y:340},landingRight:{x:950,y:340},backWall:{x:170,y:24,width:815,height:220},furniture:[],objects:{family_photo_final:[365,132,160,112],shoe_rack:[690,245,225,135],front_door:[1000,240,120,70]}}
+  };
+  const order=["livingroom","kitchen","teen","hall","yard","entrance"];
+  for(const [index,id] of order.entries()){
+    const room=window.ROOMS[id],layout=layouts[id];
+    room.background=`assets/backgrounds/${id}-night.png`;
+    room.layoutVersion=2;room.spawn=layout.spawn;
+    room.walls=[{x:0,y:0,width:1152,height:24},{x:0,y:696,width:1152,height:24},{x:0,y:0,width:24,height:720},{x:1128,y:0,width:24,height:720},layout.backWall,...layout.furniture];
+    room.doors=[];
+    if(index>0){const previous=order[index-1];room.doors.push({...layout.left,id:`${id}_previous`,name:`${window.ROOMS[previous].name} 문`,to:previous,spawn:layouts[previous].landingRight});}
+    if(index<order.length-1){const next=order[index+1];room.doors.push({...layout.right,id:`${id}_next`,name:`${window.ROOMS[next].name} 문`,to:next,spawn:layouts[next].landingLeft});}
+    else room.doors.push({...layout.right,id:"final_exit",name:"마지막 현관문",ending:true});
+    if(layout.npc)for(const npc of room.npcs)Object.assign(npc,layout.npc);
+    room.objects=room.objects.filter(obj=>obj.id!=="shoe_box_hall"&&obj.id!=="shoe_rack");
+    for(const obj of room.objects){const p=layout.objects[obj.id];if(p)Object.assign(obj,{x:p[0],y:p[1],width:p[2],height:p[3]});}
+    if(id==="livingroom")room.objects.find(o=>o.id==="family_photo_living").interactionRect={x:526,y:302,width:102,height:82};
+    if(id==="teen")room.objects.find(o=>o.id==="desk").backgroundPart=true;
+    if(id==="entrance")Object.assign(room.objects.find(o=>o.id==="front_door"),{backgroundPart:true,solid:false,interactive:false});
+  }
 })();

@@ -18,7 +18,7 @@
       const size = 627;
       const sourceX = this.direction === "up" || this.direction === "right" ? size : 0;
       const sourceY = this.direction === "left" || this.direction === "right" ? size : 0;
-      const width = 72, height = 92;
+      const width = 36 * (window.HYO_CONSTANTS?.CHARACTER_SCALE || 2), height = 48 * (window.HYO_CONSTANTS?.CHARACTER_SCALE || 2);
       const drawX = Math.round(sx + this.width / 2 - width / 2);
       const drawY = Math.round(sy + this.height - height + bob);
       const image = agedSheets[this.character] || agedSheets.boy;
@@ -45,6 +45,8 @@
       this.canvas = document.getElementById("gameCanvas");
       this.ctx = this.canvas.getContext("2d");
       this.constants = constants();
+      this.npcScale=this.constants.CHARACTER_SCALE || 2;
+      for(const room of Object.values(window.ROOMS))if(room.background)this.getObjectImage(room.background);
       this.input = { up: false, down: false, left: false, right: false };
       this.currentRoomId = "livingroom";
       this.currentRoom = window.ROOMS[this.currentRoomId];
@@ -200,42 +202,36 @@
     }
 
     bindMobileControls() {
-      const joystick = document.getElementById("moveJoystick");
-      const knob = document.getElementById("joystickKnob");
+      const controls = document.getElementById("mobileControls");
       const action = document.getElementById("mobileActionBtn");
-      if (!joystick || !knob || !action) return;
-
-      let activePointer = null;
-      const reset = () => {
-        this.input.up = this.input.down = this.input.left = this.input.right = false;
-        knob.style.transform = "translate(-50%, -50%)";
-        activePointer = null;
+      if (!controls || !action) return;
+      document.body.appendChild(controls);
+      const buttons = Array.from(controls.querySelectorAll("[data-move]"));
+      const held = new Map();
+      const sync = () => {
+        for (const direction of ["up", "down", "left", "right"]) {
+          this.input[direction] = Array.from(held.values()).includes(direction);
+        }
+        buttons.forEach(button => button.classList.toggle("pressed", this.input[button.dataset.move]));
       };
-      const move = (event) => {
-        if (activePointer !== event.pointerId) return;
-        event.preventDefault();
-        const rect = joystick.getBoundingClientRect();
-        const radius = rect.width * 0.31;
-        let dx = event.clientX - (rect.left + rect.width / 2);
-        let dy = event.clientY - (rect.top + rect.height / 2);
-        const distance = Math.hypot(dx, dy) || 1;
-        if (distance > radius) { dx = dx / distance * radius; dy = dy / distance * radius; }
-        knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-        const threshold = radius * 0.24;
-        this.input.left = dx < -threshold;
-        this.input.right = dx > threshold;
-        this.input.up = dy < -threshold;
-        this.input.down = dy > threshold;
-      };
-      joystick.addEventListener("pointerdown", (event) => {
-        activePointer = event.pointerId;
-        joystick.setPointerCapture(event.pointerId);
-        move(event);
+      const reset = () => { held.clear(); sync(); };
+      buttons.forEach(button => {
+        button.addEventListener("pointerdown", event => {
+          if (event.pointerType === "mouse" && event.button !== 0) return;
+          event.preventDefault();
+          button.setPointerCapture(event.pointerId);
+          held.set(event.pointerId, button.dataset.move);
+          sync();
+        });
+        const release = event => { held.delete(event.pointerId); sync(); };
+        button.addEventListener("pointerup", release);
+        button.addEventListener("pointercancel", release);
+        button.addEventListener("lostpointercapture", release);
+        button.addEventListener("contextmenu", event => event.preventDefault());
       });
-      joystick.addEventListener("pointermove", move);
-      joystick.addEventListener("pointerup", reset);
-      joystick.addEventListener("pointercancel", reset);
       window.addEventListener("blur", reset);
+      window.addEventListener("orientationchange", reset);
+      document.addEventListener("visibilitychange", () => { if (document.hidden) reset(); });
 
       action.addEventListener("click", (event) => {
         event.preventDefault();
@@ -377,21 +373,27 @@
     }
 
     loop(time) {
-      if (this.started && !this.paused && !this.dialog.active) this.update(time);
+      const dt=this.previousFrameTime===undefined?1/60:Math.max(0,Math.min(.05,(time-this.previousFrameTime)/1000));
+      this.previousFrameTime=time;
+      if (this.started && !this.paused && !this.dialog.active) this.update(time,dt);
       this.render();
       requestAnimationFrame((next) => this.loop(next));
     }
 
-    update(time) {
-      this.player.update(this.input, this.activeRoom());
+    update(time,deltaSeconds=1/60) {
+      this.player.update(this.input, this.activeRoom(),deltaSeconds);
       this.camera.update(this.player, this.currentRoom);
 
       const door = window.Collision.doorAt(this.player.rect, this.currentRoom);
-      if (door) {
-        if (!this.epilogueMode) this.enterRoom(door.to, door.spawn.x, door.spawn.y, true);
+      const doorKey=door?`${this.currentRoomId}:${door.id}`:null;
+      if(!door)this.lastDoorKey=null;
+      if (door && this.lastDoorKey!==doorKey) {
+        this.lastDoorKey=doorKey;
+        if(door.ending){if(!this.epilogueMode)this.tryEnding();}
+        else if (!this.epilogueMode) this.enterRoom(door.to, door.spawn.x, door.spawn.y, true);
         else if (this.canUseEpilogueDoor(door)) this.enterRoom(door.to, door.spawn.x, door.spawn.y, true);
         else {
-          this.player.setPosition(110, this.player.y);
+          this.player.setPosition(this.currentRoom.spawn.x,this.currentRoom.spawn.y);
           if (!this.epilogueDoorNotice || time - this.epilogueDoorNotice > 1200) {
             this.toast(this.epilogueCompleted.has(this.currentRoomId) ? "뒷이야기는 왼쪽 문을 따라 거실로 돌아갑니다." : "이 장소의 아이와 먼저 이야기해 보세요.");
             this.epilogueDoorNotice = time;
@@ -411,7 +413,10 @@
       this.currentRoomId = roomId;
       this.currentRoom = room;
       this.npcs = this.visibleNpcs(room).map((npc) => new window.NPC(npc));
-      this.player.setPosition(x, y);
+      const candidate={x,y,width:this.player.width,height:this.player.height};
+      const position=window.Collision.canMove(candidate,this.activeRoom())?candidate:room.spawn;
+      this.player.setPosition(position.x,position.y);
+      this.lastDoorKey=null;
       this.camera.update(this.player, room);
       if (fade && this.dom.fade) {
         this.dom.fade.classList.add("show");
@@ -444,7 +449,9 @@
         return;
       }
 
+      if (target.kind === "door" && target.ending) {this.tryEnding();return;}
       if (target.kind === "door") {
+        if(this.epilogueMode&&!this.canUseEpilogueDoor(target))return this.toast("이 장소의 아이와 먼저 이야기해 보세요.");
         this.dialog.show(target.name, [`${target.name}(으)로 이동합니다.`], () => this.enterRoom(target.to, target.spawn.x, target.spawn.y, true));
         return;
       }
@@ -682,7 +689,7 @@
     }
 
     epilogueNpc(roomId) {
-      const positions = { entrance:[525,308], yard:[650,335], hall:[365,310], teen:[585,350], kitchen:[690,330], livingroom:[640,365] };
+      const positions = { entrance:[560,430], yard:[640,445], hall:[440,390], teen:[645,490], kitchen:[765,460], livingroom:[770,480] };
       const position = positions[roomId] || [560,340];
       return { id:`epilogue_child_${roomId}`, name:"아이", x:position[0], y:position[1], width:32, height:42, spriteByCharacter:{boy:"assets/characters/boy/hyo_boy_walk.png",girl:"assets/characters/girl/hyo_girl_walk.png"}, spriteWidth:36, spriteHeight:48, displayWidth:36, displayHeight:48, dialogs:this.epilogueStories[roomId] || ["..."], epilogueStory:true };
     }
@@ -927,6 +934,15 @@
       ctx.fillStyle = room.floor || "#2a2425";
       ctx.fillRect(0, 0, room.size.width, room.size.height);
 
+      const background=room.background?this.getObjectImage(room.background):null;
+      if(background&&background.complete&&background.naturalWidth){
+        ctx.imageSmoothingEnabled=true;
+        ctx.imageSmoothingQuality="high";
+        ctx.drawImage(background,0,0,room.size.width,room.size.height);
+        ctx.restore();
+        ctx.imageSmoothingEnabled=false;
+        return;
+      }
       const tile = this.constants.TILE_SIZE || 48;
       const theme = this.decorThemeForRoom(room.id);
       this.drawTiledDecor(theme.floor, 0, 0, room.size.width, room.size.height, tile * 2);
@@ -1440,6 +1456,7 @@
       ctx.save();
       ctx.translate(-this.camera.x, -this.camera.y);
       (room.objects || []).forEach((object) => {
+        if(object.backgroundPart)return;
         let drewImage = false;
         if (object.image) {
           const storyPhoto = this.epilogueMode && object.type === "photo" && (room.id === "entrance" || room.id === "livingroom");
@@ -1458,7 +1475,7 @@
           ctx.strokeRect(object.x, object.y, object.width, object.height);
         }
         ctx.fillStyle = "#eadcb9";
-        ctx.font = "12px Malgun Gothic, monospace";
+        ctx.font = "16px Malgun Gothic, monospace";
         ctx.textAlign = "center";
         ctx.textBaseline = "alphabetic";
         ctx.fillText(object.name, object.x + object.width / 2, object.y + object.height + 14);
@@ -1517,9 +1534,9 @@
 
   window.MINIGAME_ROUTES = Object.assign(
     {
-      livingroom: "효찾기 게임.html?v=20260827-2",
+      livingroom: "효찾기 게임.html?v=20261010-pacing",
       kitchen: "엄마찾기게임.html",
-      teen: "효커넥트팩토리/이수아/데시벨게임.html",
+      teen: "효커넥트팩토리/이수아/데시벨게임.html?v=20261010-tug-art",
       hall: "아버지퇴근길게임.html?v=20260827-2",
       yard: "minigames/yard.html",
       grandmother_cooking: "할머니요리게임.html",
@@ -1688,7 +1705,7 @@
 
   window.addEventListener("DOMContentLoaded", async () => {
     await Promise.all([
-      loadOptionalScript("constants.js", "HYO_CONSTANTS"),
+      loadOptionalScript("constants.js?v=20261010-pacing", "HYO_CONSTANTS"),
       loadOptionalScript("utils.js", "HyoUtils"),
       loadOptionalScript("ui.js", "GameUI"),
       loadOptionalScript("audio.js", "AudioManager"),

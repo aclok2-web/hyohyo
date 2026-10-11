@@ -236,7 +236,7 @@
     }
 
     onKey(event, pressed) {
-      if (document.body.classList.contains("opening-active")) return;
+      if (document.body.classList.contains("opening-active") || window.HYO_PHOTO?.active) return;
       const key = event.key.toLowerCase();
       if (pressed) this.syncBackgroundMusic();
       if (pressed && this.dom.title.style.display !== "none" && !this.hasSaveData) {
@@ -283,7 +283,7 @@
     }
 
     start() {
-      if (document.body.classList.contains("opening-active")) return;
+      if (document.body.classList.contains("opening-active") || window.HYO_PHOTO?.active) return;
       if (!this.playerCharacter) {
         if (this.dom.characterHint) this.dom.characterHint.textContent = "먼저 주인공을 선택하세요.";
         return;
@@ -407,6 +407,7 @@
     }
 
     interact() {
+      if (window.HYO_PHOTO?.active) return;
       const target = window.Collision.nearestInteractable(this.player, this.activeRoom(), this.constants.INTERACTION_DISTANCE || 42);
       if (!target) {
         this.toast("조사할 수 있는 대상 앞에서 E 또는 Enter를 눌러보세요.");
@@ -450,10 +451,16 @@
         return;
       }
 
-      this.dialog.show(target.name, target.dialogs || ["살펴보았지만 특별한 것은 없다."], () => {
+      const finish = () => {
         if (target.reward) this.grantReward(target.reward, target.name);
         if (target.miniGame) this.startMiniGame(target.miniGame);
-      });
+      };
+      const needsPhoto = target.reward?.code && !this.codes.includes(target.reward.code) && window.HYO_PHOTO?.targets[target.id];
+      if (needsPhoto) {
+        window.HYO_PHOTO.open(target, this, () => this.dialog.show(target.name, target.dialogs || ["사물을 확인했다."], finish));
+      } else {
+        this.dialog.show(target.name, target.dialogs || ["살펴보았지만 특별한 것은 없다."], finish);
+      }
     }
 
     grantReward(reward, source) {

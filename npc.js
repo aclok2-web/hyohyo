@@ -12,6 +12,20 @@
         this.image.src = this.sprite;
       }
       this.images = {};
+      this.previousX = this.x;
+      this.previousY = this.y;
+      this.direction = this.direction || "down";
+      this.moving = false;
+    }
+
+    update() {
+      const dx = this.x - this.previousX;
+      const dy = this.y - this.previousY;
+      if (Math.abs(dx) > Math.abs(dy)) this.direction = dx < 0 ? "left" : "right";
+      else if (dy !== 0) this.direction = dy < 0 ? "up" : "down";
+      if (window.HYO_WALK) window.HYO_WALK.step(this, Math.hypot(dx, dy));
+      this.previousX = this.x;
+      this.previousY = this.y;
     }
 
     interact(game) {
@@ -43,6 +57,9 @@
       const y = Math.round(this.y - camera.y);
       const image = this.getImage(this.getSpriteForGame(game)) || this.image;
       const scale = game && game.npcScale ? game.npcScale : (window.HYO_CONSTANTS?.CHARACTER_SCALE || 2);
+      if (window.HYO_WALK && window.HYO_WALK.draw(ctx, this.getSpriteForGame(game), this,
+        x - ((this.displayWidth || 36) * scale - this.width) / 2,
+        y + this.height, (this.displayWidth || 36) * scale, (this.displayHeight || 48) * scale)) return;
       if (image && image.complete && image.naturalWidth) {
         const frameWidth = this.spriteWidth || 36;
         const frameHeight = this.spriteHeight || 48;

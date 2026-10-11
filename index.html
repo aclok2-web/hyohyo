@@ -13,9 +13,18 @@
 
 <link rel="stylesheet" href="style.css?v=20261010-mobile-arrows">
 
+<style>
+body.opening-active{overflow:hidden}
+body.opening-active #game{visibility:hidden}
+#openingOverlay{position:fixed;inset:0;z-index:100000;background:#08090d}
+#openingOverlay[hidden]{display:none}
+#openingFrame{display:block;border:0;width:100%;height:100%;background:#08090d}
+#openingReplayBtn{display:block;margin:12px auto 0;padding:9px 16px;border:1px solid #a78b57;border-radius:8px;background:#171319;color:#e9d8b8;cursor:pointer;font:inherit;font-size:13px}
+</style>
 </head>
 
-<body>
+<body class="opening-active">
+<div id="openingOverlay"></div>
 
 <!-- ========================= -->
 <!-- 게임 전체 -->
@@ -217,6 +226,8 @@
 
         </button>
 
+        <button id="openingReplayBtn" type="button">오프닝 다시 보기</button>
+
     </div>
 
     <!-- 일시정지 -->
@@ -246,15 +257,17 @@
 
 </div>
 
+<script src="opening.js?v=20261011"></script>
 <script src="constants.js?v=20261010-pacing"></script>
 <script src="rooms.js?v=20261010-mobile-arrows"></script>
-<script src="player.js?v=20261010-pacing"></script>
+<script src="walk.js?v=20261011-walking"></script>
+<script src="player.js?v=20261011-walking"></script>
 <script src="collision.js?v=20261010-mobile-arrows"></script>
 <script src="dialog.js?v=20260818-4"></script>
-<script src="npc.js?v=20261010-pacing"></script>
+<script src="npc.js?v=20261011-walking"></script>
 <script src="camera.js?v=20260818-2"></script>
 <script src="save.js?v=20260818-2"></script>
-  <script src="main.js?v=20261010-mobile-arrows"></script>
+  <script src="main.js?v=20261011-opening"></script>
 
 </body>
 </html>

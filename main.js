@@ -2,30 +2,7 @@
 (function () {
   "use strict";
 
-  // 뒷이야기의 움직이는 부모 캐릭터는 체크무늬를 제거한 투명 시트를 사용한다.
-  if (window.Player) {
-    const originalPlayerDraw = window.Player.prototype.draw;
-    const agedSheets = {};
-    ["boy", "girl"].forEach((key) => {
-      const image = new Image();
-      image.src = key === "girl" ? "assets/characters/parent_female_transparent.png" : "assets/characters/parent_male_transparent.png";
-      agedSheets[key] = image;
-    });
-    window.Player.prototype.draw = function (ctx, camera) {
-      if (!this.aged) return originalPlayerDraw.call(this, ctx, camera);
-      const sx = Math.round(this.x - camera.x), sy = Math.round(this.y - camera.y);
-      const bob = this.moving && this.frame % 2 === 1 ? -2 : 0;
-      const size = 627;
-      const sourceX = this.direction === "up" || this.direction === "right" ? size : 0;
-      const sourceY = this.direction === "left" || this.direction === "right" ? size : 0;
-      const width = 36 * (window.HYO_CONSTANTS?.CHARACTER_SCALE || 2), height = 48 * (window.HYO_CONSTANTS?.CHARACTER_SCALE || 2);
-      const drawX = Math.round(sx + this.width / 2 - width / 2);
-      const drawY = Math.round(sy + this.height - height + bob);
-      const image = agedSheets[this.character] || agedSheets.boy;
-      if (image.complete && image.naturalWidth) ctx.drawImage(image, sourceX, sourceY, size, size, drawX, drawY, width, height);
-      else originalPlayerDraw.call(this, ctx, camera);
-    };
-  }
+  // Player handles walking sprites for both the main story and the epilogue.
 
   const DEFAULT_CONSTANTS = {
     GAME_WIDTH: 960,
@@ -259,6 +236,7 @@
     }
 
     onKey(event, pressed) {
+      if (document.body.classList.contains("opening-active")) return;
       const key = event.key.toLowerCase();
       if (pressed) this.syncBackgroundMusic();
       if (pressed && this.dom.title.style.display !== "none" && !this.hasSaveData) {
@@ -305,6 +283,7 @@
     }
 
     start() {
+      if (document.body.classList.contains("opening-active")) return;
       if (!this.playerCharacter) {
         if (this.dom.characterHint) this.dom.characterHint.textContent = "먼저 주인공을 선택하세요.";
         return;
@@ -382,6 +361,7 @@
 
     update(time,deltaSeconds=1/60) {
       this.player.update(this.input, this.activeRoom(),deltaSeconds);
+      this.npcs.forEach((npc) => npc.update());
       this.camera.update(this.player, this.currentRoom);
 
       const door = window.Collision.doorAt(this.player.rect, this.currentRoom);

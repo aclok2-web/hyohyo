@@ -28,7 +28,7 @@
   const parentSprites = {};
   ["boy", "girl"].forEach((key) => {
     const image = new Image();
-    image.src = key === "girl" ? "assets/characters/parent_female.png" : "assets/characters/parent_male.png";
+    image.src = key === "girl" ? "assets/characters/parent_female_transparent.png" : "assets/characters/parent_male_transparent.png";
     parentSprites[key] = image;
   });
 
@@ -82,7 +82,8 @@
       const dx=horizontal/length*this.speed*dt;
       const dy=vertical/length*this.speed*dt;
 
-      this.moving = dx !== 0 || dy !== 0;
+      const previousX = this.x;
+      const previousY = this.y;
       if (dx < 0) this.direction = "left";
       if (dx > 0) this.direction = "right";
       if (dy < 0) this.direction = "up";
@@ -91,7 +92,11 @@
       if (dx !== 0) this.tryMove(dx, 0, room);
       if (dy !== 0) this.tryMove(0, dy, room);
 
-      if (this.moving) {
+      const distance = Math.hypot(this.x - previousX, this.y - previousY);
+      this.moving = distance > 0.001;
+      if (window.HYO_WALK) {
+        window.HYO_WALK.step(this, distance);
+      } else if (this.moving) {
         this.frameTimer += dt * 60;
         if (this.frameTimer > 10) {
           this.frame = (this.frame + 1) % 4;
@@ -121,9 +126,20 @@
       const level = Math.max(0, Math.min(2, this.darknessLevel || Player.darknessLevel || 0));
       const sprite = sprites[this.character] || sprites.boy;
 
+      if (window.HYO_WALK) {
+        const key = this.aged ? (this.character === "girl" ? "parent_female" : "parent_male") : this.character;
+        ctx.save();
+        if (!this.aged) ctx.filter = level === 2 ? "brightness(0.55) saturate(0.72)" : level === 1 ? "brightness(0.78) saturate(0.85)" : "none";
+        const drawn = window.HYO_WALK.draw(ctx, key, this, sx + this.width / 2 - DISPLAY_WIDTH / 2, sy + this.height, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+        ctx.filter = "none";
+        if (drawn && !this.aged) this.drawDarkness(ctx, drawX, drawY);
+        ctx.restore();
+        if (drawn) return;
+      }
+
       if (this.aged) {
         const parent = parentSprites[this.character] || parentSprites.boy;
-        const sourceSize = 627;
+        const sourceSize = parent.naturalWidth / 2 || 627;
         const sourceX = this.direction === "up" || this.direction === "right" ? sourceSize : 0;
         const sourceY = this.direction === "left" || this.direction === "right" ? sourceSize : 0;
         const width = DISPLAY_WIDTH;

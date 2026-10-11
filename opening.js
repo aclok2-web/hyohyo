@@ -3,7 +3,7 @@
   "use strict";
   const overlay = document.getElementById("openingOverlay");
   const game = document.getElementById("game");
-  const key = "hyo_opening_seen_20261011";
+  const key = "hyo_opening_seen_20261012_story";
   let frame;
   function complete() {
     try { sessionStorage.setItem(key, "1"); } catch (_) {}
@@ -22,7 +22,7 @@
     frame.id = "openingFrame";
     frame.title = "효 방탈출 오프닝 — 아무도 없는 집";
     frame.allow = "autoplay; fullscreen";
-    frame.src = "hyo-opening.html?v=20261011";
+    frame.src = "hyo-opening.html?v=20261012-story";
     overlay.appendChild(frame);
     frame.addEventListener("load", () => frame?.focus());
   }

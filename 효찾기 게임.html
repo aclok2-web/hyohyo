@@ -108,12 +108,15 @@
       flex: 0 0 auto;
       width: min(68vw, 640px);
       height: 100%;
-      background-image: url("assets/objects/living_family_photo.png");
+      position: relative;
+      background: #080706;
       background-repeat: no-repeat;
       background-position: center;
       background-size: contain;
       filter: saturate(1.02) contrast(1.05);
     }
+
+    .photo canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
 
     .stage::after {
       content: "";
@@ -232,7 +235,7 @@
     <div class="topbar">
       <div>
         <h1>효를 찾아라</h1>
-        <p class="message" id="message">가족사진이 보통 속도로 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.</p>
+        <p class="message" id="message">흐릿한 사진 속 효(孝)를 찾아보세요. 하나씩 찾을 때마다 가족의 기억이 선명해집니다.</p>
       </div>
       <div class="summary">
         <div class="chip"><span>찾은 효</span><strong id="foundValue">0 / 5</strong></div>
@@ -279,6 +282,48 @@
     let hyoY = 0;
     let lastTime = 0;
     let rafId = 0;
+    let nextHyoTimer = 0;
+    let targetReady = false;
+    const familyPhoto = new Image();
+    const photoCanvases = [...track.querySelectorAll(".photo")].map(photo => {
+      const canvas = document.createElement("canvas");
+      canvas.setAttribute("aria-hidden", "true");
+      photo.appendChild(canvas);
+      return canvas;
+    });
+    const mosaicBuffer = document.createElement("canvas");
+    const mosaicColumns = [6, 10, 18, 32, 60];
+    const mosaicBlur = [14, 10, 7, 4, 1.5];
+
+    function revealPhoto() {
+      if (!familyPhoto.naturalWidth) return;
+      const progress = Math.min(found, TOTAL_HYO);
+      for (const canvas of photoCanvases) {
+        const width = Math.max(1, Math.round(canvas.parentElement.clientWidth));
+        const height = Math.max(1, Math.round(canvas.parentElement.clientHeight));
+        const ctx = canvas.getContext("2d");
+        canvas.width = width; canvas.height = height;
+        ctx.fillStyle = "#080706"; ctx.fillRect(0, 0, width, height);
+        const scale = Math.min(width / familyPhoto.naturalWidth, height / familyPhoto.naturalHeight);
+        const w = familyPhoto.naturalWidth * scale, h = familyPhoto.naturalHeight * scale;
+        const x = (width - w) / 2, y = (height - h) / 2;
+        if (progress === TOTAL_HYO) {
+          canvas.style.filter = "none";
+          ctx.drawImage(familyPhoto, x, y, w, h);
+        } else {
+          mosaicBuffer.width = mosaicColumns[progress];
+          mosaicBuffer.height = Math.max(1, Math.round(mosaicBuffer.width * familyPhoto.naturalHeight / familyPhoto.naturalWidth));
+          const small = mosaicBuffer.getContext("2d");
+          small.drawImage(familyPhoto, 0, 0, mosaicBuffer.width, mosaicBuffer.height);
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(mosaicBuffer, x, y, w, h);
+          canvas.style.filter = `blur(${mosaicBlur[progress]}px)`;
+        }
+        canvas.dataset.revealStage = String(progress);
+      }
+    }
+    familyPhoto.onload = revealPhoto;
+    familyPhoto.src = "assets/objects/living_family_photo.png";
 
     function photoWidth() {
       const firstPhoto = track.querySelector(".photo");
@@ -293,6 +338,7 @@
       foundValue.textContent = `${found} / ${TOTAL_HYO}`;
       speedValue.textContent = found >= TOTAL_HYO ? "완료" : "보통";
       missValue.textContent = misses;
+      revealPhoto();
     }
 
     function placeHyo() {
@@ -301,6 +347,7 @@
       const height = rect.height;
       hyoX = -60 - Math.random() * width * 0.6;
       hyoY = Math.max(54, Math.min(height - 54, height * (0.22 + Math.random() * 0.58)));
+      targetReady = true;
       target.classList.remove("found");
       target.style.display = "block";
       target.style.left = `${hyoX}px`;
@@ -309,6 +356,7 @@
 
     function resetGame() {
       cancelAnimationFrame(rafId);
+      clearTimeout(nextHyoTimer);
       found = 0;
       misses = 0;
       running = false;
@@ -318,11 +366,12 @@
       placeHyo();
       updateUi();
       startBtn.disabled = false;
-      message.textContent = "가족사진이 보통 속도로 지나갑니다. 숨어 있는 효(孝)를 찾아보세요.";
+      message.textContent = "흐릿한 사진 속 효(孝)를 찾아보세요. 하나씩 찾을 때마다 가족의 기억이 선명해집니다.";
     }
 
     function startGame() {
       cancelAnimationFrame(rafId);
+      clearTimeout(nextHyoTimer);
       found = 0;
       misses = 0;
       running = true;
@@ -331,7 +380,7 @@
       placeHyo();
       updateUi();
       startBtn.disabled = true;
-      message.textContent = "움직이는 가족사진 속 효를 클릭하세요. 사진은 계속 보통 속도로 움직입니다.";
+      message.textContent = "움직이는 사진 속 효를 클릭하세요. 효를 찾을 때마다 모자이크가 조금씩 걷힙니다.";
       rafId = requestAnimationFrame(tick);
     }
 
@@ -385,7 +434,8 @@
 
     function foundHyo(event) {
       event.stopPropagation();
-      if (!running) return;
+      if (!running || !targetReady) return;
+      targetReady = false;
 
       found += 1;
       target.classList.add("found");
@@ -403,9 +453,9 @@
         return;
       }
 
-      message.textContent = `효를 찾았습니다! (${found} / ${TOTAL_HYO}) 보통 속도로 계속 찾아보세요.`;
+      message.textContent = `효를 찾았습니다! (${found} / ${TOTAL_HYO}) 가족사진이 조금 더 선명해졌어요.`;
 
-      setTimeout(placeHyo, 260);
+      nextHyoTimer = setTimeout(() => { if (running) placeHyo(); }, 260);
     }
 
     function missClick() {
@@ -440,6 +490,7 @@
     resetBtn.addEventListener("click", resetGame);
     window.addEventListener("resize", () => {
       if (!running) placeHyo();
+      revealPhoto();
     });
 
     resetGame();

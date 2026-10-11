@@ -56,7 +56,7 @@
       this.pendingFatherApology = false;
       this.fatherApologyShown = false;
       this.epilogueOrder = ["entrance", "yard", "hall", "teen", "kitchen", "livingroom"];
-      this.epilogueStories = {
+      this.epilogueStories = window.HYO_STORY?.epilogue || {
         entrance: ["또 늦게 들어왔다고 화내실 거죠? 집에 오기 싫었어요.", "기다림이 걱정이었다는 것을 모른 채, 그 마음을 간섭이라고 밀어냈었구나."],
         yard: ["왜 이런 일까지 제가 해야 해요? 귀찮게 하지 마세요.", "함께 짐을 들자는 작은 부탁에도 차갑게 답했던 말이 부모님께 상처가 되었겠구나."],
         hall: ["지금 바쁜데 왜 계속 말을 걸어요? 나중에요.", "잠깐의 대화를 미루는 동안 부모님은 복도에서 여러 번 발걸음을 돌리셨겠구나."],
@@ -292,7 +292,7 @@
       this.started = true;
       document.getElementById("game").classList.add("mobile-playing");
       this.dom.title.style.display = "none";
-      this.showMission("미션을 해결하며 10개의 비밀번호 글자를 하나씩 찾아보세요.");
+      this.showMission(window.HYO_STORY.mission);
       if (this.pendingFatherApology) {
         this.pendingFatherApology = false;
         setTimeout(() => this.showFatherApology(), 500);
@@ -532,7 +532,7 @@
       if (this.fatherApologyShown || !this.started) return;
       this.fatherApologyShown = true;
       const child = this.playerCharacter === "girl" ? "딸아" : "아들아";
-      this.dialog.show("아버지", [`미안해…… ${child}.`]);
+      this.dialog.show("아버지", [`미안해…… ${child}.`, "힘든 일은 없는지 먼저 물어봤어야 했는데. 네 이야기를 나중으로 미뤄서 미안하다.", "돌아가면 서로의 말을 끝까지 들어보자. 나도 다시 배워볼게."]);
     }
 
     wait(ms) {
@@ -743,6 +743,8 @@
         this.toast(`비밀번호가 ${missing.length}개 더 필요합니다.`);
         return;
       }
+      document.getElementById("endingTitle").textContent = window.HYO_STORY.endingTitle;
+      document.getElementById("endingText").textContent = window.HYO_STORY.endingText;
       this.dom.ending.classList.add("show");
       this.started = false;
       this.saveGame();
@@ -762,7 +764,7 @@
       this.player.setAged(true);
       this.dom.ending.classList.remove("show");
       this.enterRoom("entrance", 930, 320, true);
-      this.showMission("비밀번호 대신 아이의 이야기를 들으며 현관에서 거실까지 거꾸로 돌아가세요.");
+      this.showMission("시간이 흘러 당신은 부모가 되었습니다. 이번에는 아이의 말을 끝까지 들으며 현관에서 거실로 돌아가세요.");
       this.saveGame();
     }
 
@@ -775,7 +777,7 @@
       if (this.dom.epilogue) this.dom.epilogue.style.display = "none";
       if (actions) actions.style.display = "none";
       title.textContent = "TV 속 가족사진";
-      text.textContent = "함께 웃던 가족의 시간이 화면에 비칩니다.";
+      text.textContent = "기억을 되찾던 아이가 이제 부모가 되어 같은 사진을 바라봅니다. 사진 속에는 서로의 말을 기다려주던 순간도 남아 있습니다.";
       if (visual) {
         visual.classList.remove("crying-hold");
         visual.src = "assets/objects/epilogue_tv_family_photo_transparent.png";
@@ -784,13 +786,13 @@
       }
       this.dom.ending.classList.add("show");
       setTimeout(() => {
-        title.textContent = "후회의 눈물";
-        text.textContent = "사진을 바라보던 부모님의 눈에서 참았던 눈물이 흐릅니다.";
+        title.textContent = "이제야 들리는 마음";
+        text.textContent = "아이였던 나와 부모가 된 내가 같은 마음으로 겹칩니다. 몰랐던 마음을 알아본 눈물이 흐릅니다.";
         if (visual) {
           const character = this.playerCharacter === "girl" ? "female" : "male";
           let frame = 1;
           visual.src = `assets/objects/epilogue_cry_${character}_${frame}.png?v=2`;
-          visual.alt = "후회의 눈물을 흘리는 부모님";
+          visual.alt = "이제야 들리는 마음을 흘리는 부모님";
           visual.classList.remove("crying-hold");
           clearInterval(this.cryingFrameTimer);
           this.cryingFrameTimer = setInterval(() => {
@@ -808,8 +810,8 @@
         clearInterval(this.cryingFrameTimer);
         this.cryingFrameTimer = null;
         if (visual) visual.classList.remove("show", "crying-hold");
-        title.textContent = "오늘, 효를 실천하세요.";
-        text.innerHTML = "그때 조금만 더 잘해드릴걸.<br>그 한마디를 후회로 남기지 마세요.<br>효를 실천할 수 있는 가장 좋은 날은 오늘입니다.";
+        title.textContent = "오늘, 서로의 말을 들어주세요.";
+        text.innerHTML = "“오늘은 어땠어?”<br>“내 이야기도 들어줄래?”<br>효는 한 사람의 참음이 아니라, 서로를 향해 다시 말을 건네는 작은 시작입니다.";
         if (actions) actions.style.display = "flex";
       }, 8000);
       this.saveGame();
@@ -835,8 +837,8 @@
       this.fatherApologyShown = false;
       this.player.setAged(false);
       if (this.dom.epilogue) this.dom.epilogue.style.display = "inline-block";
-      document.getElementById("endingTitle").textContent = "마음의 문이 열렸습니다.";
-      document.getElementById("endingText").textContent = "이제 부모님의 마음을 이해할 수 있을 것 같습니다.";
+      document.getElementById("endingTitle").textContent = window.HYO_STORY.endingTitle;
+      document.getElementById("endingText").textContent = window.HYO_STORY.endingText;
 
       this.dom.pause.classList.remove("show");
       this.dom.ending.classList.remove("show");
@@ -1521,7 +1523,7 @@
 
   window.MINIGAME_ROUTES = Object.assign(
     {
-      livingroom: "효찾기 게임.html?v=20261010-pacing",
+      livingroom: "효찾기 게임.html?v=20261012-mosaic",
       kitchen: "엄마찾기게임.html",
       teen: "효커넥트팩토리/이수아/데시벨게임.html?v=20261010-tug-art",
       hall: "아버지퇴근길게임.html?v=20260827-2",
